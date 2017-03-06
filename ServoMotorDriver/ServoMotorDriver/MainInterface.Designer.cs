@@ -39,6 +39,7 @@
             this.exitToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.ModeSelectionBox = new System.Windows.Forms.ComboBox();
             this.DirectionSelectionBox = new System.Windows.Forms.ComboBox();
+            this.Graph = new ZedGraph.ZedGraphControl();
             this.StatusStrip.SuspendLayout();
             this.MenuStrip.SuspendLayout();
             this.SuspendLayout();
@@ -63,9 +64,9 @@
             // 
             this.StatusStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.MessageLogStatusStrip});
-            this.StatusStrip.Location = new System.Drawing.Point(0, 304);
+            this.StatusStrip.Location = new System.Drawing.Point(0, 470);
             this.StatusStrip.Name = "StatusStrip";
-            this.StatusStrip.Size = new System.Drawing.Size(610, 22);
+            this.StatusStrip.Size = new System.Drawing.Size(963, 22);
             this.StatusStrip.TabIndex = 1;
             // 
             // MessageLogStatusStrip
@@ -79,7 +80,7 @@
             this.fileToolStripMenuItem});
             this.MenuStrip.Location = new System.Drawing.Point(0, 0);
             this.MenuStrip.Name = "MenuStrip";
-            this.MenuStrip.Size = new System.Drawing.Size(610, 24);
+            this.MenuStrip.Size = new System.Drawing.Size(963, 24);
             this.MenuStrip.TabIndex = 2;
             this.MenuStrip.Text = "menuStrip1";
             // 
@@ -117,12 +118,28 @@
             this.DirectionSelectionBox.TabIndex = 4;
             this.DirectionSelectionBox.SelectedIndexChanged += new System.EventHandler(this.OnDirectionSelectionChanged);
             // 
+            // Graph
+            // 
+            this.Graph.IsShowCursorValues = true;
+            this.Graph.Location = new System.Drawing.Point(382, 27);
+            this.Graph.Name = "Graph";
+            this.Graph.ScrollGrace = 0D;
+            this.Graph.ScrollMaxX = 0D;
+            this.Graph.ScrollMaxY = 0D;
+            this.Graph.ScrollMaxY2 = 0D;
+            this.Graph.ScrollMinX = 0D;
+            this.Graph.ScrollMinY = 0D;
+            this.Graph.ScrollMinY2 = 0D;
+            this.Graph.Size = new System.Drawing.Size(544, 440);
+            this.Graph.TabIndex = 5;
+            // 
             // MainInterface
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.AutoValidate = System.Windows.Forms.AutoValidate.EnableAllowFocusChange;
-            this.ClientSize = new System.Drawing.Size(610, 326);
+            this.ClientSize = new System.Drawing.Size(963, 492);
+            this.Controls.Add(this.Graph);
             this.Controls.Add(this.DirectionSelectionBox);
             this.Controls.Add(this.ModeSelectionBox);
             this.Controls.Add(this.StatusStrip);
@@ -153,6 +170,7 @@
         private System.Windows.Forms.ToolStripStatusLabel MessageLogStatusStrip;
         private System.Windows.Forms.ComboBox ModeSelectionBox;
         private System.Windows.Forms.ComboBox DirectionSelectionBox;
+        private ZedGraph.ZedGraphControl Graph;
     }
 }
 
