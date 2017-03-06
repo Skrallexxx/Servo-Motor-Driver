@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Windows.Forms;
 using System.IO.Ports;
+using System.Diagnostics;
 using static ServoMotorDriver.ControlEnums;
 
 namespace ServoMotorDriver {
@@ -23,32 +24,40 @@ namespace ServoMotorDriver {
         #region Interface Intialization
         // Interface intiialization method
         public MainInterface() {
+            Debug.WriteLine("Servo Motor Driver Starting Up...");
             InitializeComponent();
 
             // Add the MODE enums to the dropdown mode selection box
             foreach(MODE mode in Enum.GetValues(typeof(MODE))) {
                 ModeSelectionBox.Items.Add(ControlEnums.GetAttribute(mode).disp);
             }
+            WriteMessage("Added Mode Selection Options");
 
             // Add available COM ports to the dropdown port selection box
             ComPortSelectionBox.DataSource = SerialPort.GetPortNames();
+            WriteMessage("Added COM Port Selection Options");
 
             // Establish connection using selected COM port
             if (ComPortSelectionBox.Items.Count > 0)
                 TryOpenSerialCommunication(ComPortSelectionBox.SelectedItem.ToString());
-            else ErrorMessageStatusStrip.Text = "No Available COM Ports";
+            else WriteError("No Available COM Ports");
         }
 
         #endregion
 
-        #region Communication Send/Receive
+        #region Program Loop
+
         // Send-Recieve method, runs every 10 ticks
         private void SendReceiveUpdate(object sender, EventArgs e) {
 
         }
 
+        #endregion
+
+        #region Communication Send/Receive
+
         void TryOpenSerialCommunication(string portName, bool reOpen = false) {
-            // Check if the bluetooth has been connected.
+            // Check if the bluetooth has been connected
             if (reOpen = true && SerialComPort.IsOpen)
                 SerialComPort.Close();
             if (!SerialComPort.IsOpen) {
@@ -56,12 +65,14 @@ namespace ServoMotorDriver {
                     return;
                 SerialComPort.PortName = portName;
                 try {
-                    //Try to connect to the bluetooth.
+                    //Try to connect to the bluetooth
+                    WriteMessage("Attempting to open communication on " + portName);
                     SerialComPort.Open();
+                    WriteMessage("Communication successfully opened on " + portName);
                 }
                 catch {
-                    //If the bluetooth does not connect return an error.
-                    ErrorMessageStatusStrip.Text = "COM Error on" + portName;
+                    //If the bluetooth does not connect return an error
+                    WriteError("Failed to open communication on " + portName);
                 }
             }
         }
@@ -70,11 +81,25 @@ namespace ServoMotorDriver {
 
         #region Interface Helper Methods
 
-        // Called when the COM port selection is changed, updates COM port in use for serial communication.
+        // Called when the COM port selection is changed, updates COM port in use for serial communication
         private void OnComPortSelectionChanged(object sender, EventArgs e) {
 
         }
 
+        #endregion
+
+        #region Debugging
+        // Writes a non-error info message to the interface and the console output
+        private void WriteMessage(string message) {
+            Debug.WriteLine("\t" + message);
+            MessageLogStatusStrip.Text = message;
+        }
+
+        // Writes an error message to the interface and the console output
+        private void WriteError(string message) {
+            Debug.WriteLine("\t[ERROR] " + message);
+            MessageLogStatusStrip.Text = message;
+        }
         #endregion
     }
 }

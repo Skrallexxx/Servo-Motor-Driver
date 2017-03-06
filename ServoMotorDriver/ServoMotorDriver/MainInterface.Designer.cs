@@ -33,10 +33,10 @@
             this.SendReceiveTimer = new System.Windows.Forms.Timer(this.components);
             this.ComPortSelectionBox = new System.Windows.Forms.ComboBox();
             this.StatusStrip = new System.Windows.Forms.StatusStrip();
+            this.MessageLogStatusStrip = new System.Windows.Forms.ToolStripStatusLabel();
             this.MenuStrip = new System.Windows.Forms.MenuStrip();
             this.fileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.exitToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.ErrorMessageStatusStrip = new System.Windows.Forms.ToolStripStatusLabel();
             this.ModeSelectionBox = new System.Windows.Forms.ComboBox();
             this.StatusStrip.SuspendLayout();
             this.MenuStrip.SuspendLayout();
@@ -61,11 +61,16 @@
             // StatusStrip
             // 
             this.StatusStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.ErrorMessageStatusStrip});
+            this.MessageLogStatusStrip});
             this.StatusStrip.Location = new System.Drawing.Point(0, 304);
             this.StatusStrip.Name = "StatusStrip";
             this.StatusStrip.Size = new System.Drawing.Size(610, 22);
             this.StatusStrip.TabIndex = 1;
+            // 
+            // MessageLogStatusStrip
+            // 
+            this.MessageLogStatusStrip.Name = "MessageLogStatusStrip";
+            this.MessageLogStatusStrip.Size = new System.Drawing.Size(0, 17);
             // 
             // MenuStrip
             // 
@@ -88,13 +93,8 @@
             // exitToolStripMenuItem
             // 
             this.exitToolStripMenuItem.Name = "exitToolStripMenuItem";
-            this.exitToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.exitToolStripMenuItem.Size = new System.Drawing.Size(92, 22);
             this.exitToolStripMenuItem.Text = "Exit";
-            // 
-            // ErrorMessageStatusStrip
-            // 
-            this.ErrorMessageStatusStrip.Name = "ErrorMessageStatusStrip";
-            this.ErrorMessageStatusStrip.Size = new System.Drawing.Size(0, 17);
             // 
             // ModeSelectionBox
             // 
@@ -137,7 +137,7 @@
         private System.Windows.Forms.MenuStrip MenuStrip;
         private System.Windows.Forms.ToolStripMenuItem fileToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem exitToolStripMenuItem;
-        private System.Windows.Forms.ToolStripStatusLabel ErrorMessageStatusStrip;
+        private System.Windows.Forms.ToolStripStatusLabel MessageLogStatusStrip;
         private System.Windows.Forms.ComboBox ModeSelectionBox;
     }
 }
