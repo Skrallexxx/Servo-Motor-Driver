@@ -10,9 +10,9 @@ using System.Windows.Forms;
 
 namespace ServoMotorDriver
 {
-    public partial class Form1 : Form
+    public partial class MainInterface : Form
     {
-        public Form1()
+        public MainInterface()
         {
             InitializeComponent();
         }
