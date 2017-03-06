@@ -28,20 +28,117 @@
         /// </summary>
         private void InitializeComponent()
         {
+            this.components = new System.ComponentModel.Container();
+            this.SerialComPort = new System.IO.Ports.SerialPort(this.components);
+            this.SendReceiveTimer = new System.Windows.Forms.Timer(this.components);
+            this.ComPortSelectionBox = new System.Windows.Forms.ComboBox();
+            this.StatusStrip = new System.Windows.Forms.StatusStrip();
+            this.MenuStrip = new System.Windows.Forms.MenuStrip();
+            this.fileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.exitToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.ErrorMessageStatusStrip = new System.Windows.Forms.ToolStripStatusLabel();
+            this.ModeSelectionBox = new System.Windows.Forms.ComboBox();
+            this.StatusStrip.SuspendLayout();
+            this.MenuStrip.SuspendLayout();
             this.SuspendLayout();
             // 
-            // Form1
+            // SendReceiveTimer
+            // 
+            this.SendReceiveTimer.Enabled = true;
+            this.SendReceiveTimer.Interval = 10;
+            this.SendReceiveTimer.Tick += new System.EventHandler(this.SendReceiveUpdate);
+            // 
+            // ComPortSelectionBox
+            // 
+            this.ComPortSelectionBox.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.ComPortSelectionBox.FormattingEnabled = true;
+            this.ComPortSelectionBox.Location = new System.Drawing.Point(12, 27);
+            this.ComPortSelectionBox.Name = "ComPortSelectionBox";
+            this.ComPortSelectionBox.Size = new System.Drawing.Size(252, 21);
+            this.ComPortSelectionBox.TabIndex = 0;
+            this.ComPortSelectionBox.SelectedIndexChanged += new System.EventHandler(this.OnComPortSelectionChanged);
+            // 
+            // StatusStrip
+            // 
+            this.StatusStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.ErrorMessageStatusStrip});
+            this.StatusStrip.Location = new System.Drawing.Point(0, 304);
+            this.StatusStrip.Name = "StatusStrip";
+            this.StatusStrip.Size = new System.Drawing.Size(610, 22);
+            this.StatusStrip.TabIndex = 1;
+            // 
+            // MenuStrip
+            // 
+            this.MenuStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.fileToolStripMenuItem});
+            this.MenuStrip.Location = new System.Drawing.Point(0, 0);
+            this.MenuStrip.Name = "MenuStrip";
+            this.MenuStrip.Size = new System.Drawing.Size(610, 24);
+            this.MenuStrip.TabIndex = 2;
+            this.MenuStrip.Text = "menuStrip1";
+            // 
+            // fileToolStripMenuItem
+            // 
+            this.fileToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.exitToolStripMenuItem});
+            this.fileToolStripMenuItem.Name = "fileToolStripMenuItem";
+            this.fileToolStripMenuItem.Size = new System.Drawing.Size(37, 20);
+            this.fileToolStripMenuItem.Text = "File";
+            // 
+            // exitToolStripMenuItem
+            // 
+            this.exitToolStripMenuItem.Name = "exitToolStripMenuItem";
+            this.exitToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.exitToolStripMenuItem.Text = "Exit";
+            // 
+            // ErrorMessageStatusStrip
+            // 
+            this.ErrorMessageStatusStrip.Name = "ErrorMessageStatusStrip";
+            this.ErrorMessageStatusStrip.Size = new System.Drawing.Size(0, 17);
+            // 
+            // ModeSelectionBox
+            // 
+            this.ModeSelectionBox.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.ModeSelectionBox.FormattingEnabled = true;
+            this.ModeSelectionBox.Location = new System.Drawing.Point(12, 66);
+            this.ModeSelectionBox.Name = "ModeSelectionBox";
+            this.ModeSelectionBox.Size = new System.Drawing.Size(252, 21);
+            this.ModeSelectionBox.TabIndex = 3;
+            // 
+            // MainInterface
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            this.AutoValidate = System.Windows.Forms.AutoValidate.EnableAllowFocusChange;
             this.ClientSize = new System.Drawing.Size(610, 326);
-            this.Name = "Form1";
-            this.Text = "Form1";
+            this.Controls.Add(this.ModeSelectionBox);
+            this.Controls.Add(this.StatusStrip);
+            this.Controls.Add(this.MenuStrip);
+            this.Controls.Add(this.ComPortSelectionBox);
+            this.MainMenuStrip = this.MenuStrip;
+            this.Name = "MainInterface";
+            this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
+            this.Text = "Servo Motor Driver";
+            this.StatusStrip.ResumeLayout(false);
+            this.StatusStrip.PerformLayout();
+            this.MenuStrip.ResumeLayout(false);
+            this.MenuStrip.PerformLayout();
             this.ResumeLayout(false);
+            this.PerformLayout();
 
         }
 
         #endregion
+
+        private System.IO.Ports.SerialPort SerialComPort;
+        private System.Windows.Forms.Timer SendReceiveTimer;
+        private System.Windows.Forms.ComboBox ComPortSelectionBox;
+        private System.Windows.Forms.StatusStrip StatusStrip;
+        private System.Windows.Forms.MenuStrip MenuStrip;
+        private System.Windows.Forms.ToolStripMenuItem fileToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem exitToolStripMenuItem;
+        private System.Windows.Forms.ToolStripStatusLabel ErrorMessageStatusStrip;
+        private System.Windows.Forms.ComboBox ModeSelectionBox;
     }
 }
 
