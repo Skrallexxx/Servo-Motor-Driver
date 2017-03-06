@@ -13,6 +13,10 @@ namespace ServoMotorDriver {
         private byte[] Inputs = new byte[4];
         private byte[] Outputs = new byte[4];
 
+        // Current selected mode and direction
+        MODE currentMode = MODE.FREESPIN;
+        DIRECTION currentDirection = DIRECTION.CLOCKWISE;
+
         // Transmission constants
         private const byte START = 255, ZERO = 0;
 
@@ -29,9 +33,15 @@ namespace ServoMotorDriver {
 
             // Add the MODE enums to the dropdown mode selection box
             foreach(MODE mode in Enum.GetValues(typeof(MODE))) {
-                ModeSelectionBox.Items.Add(ControlEnums.GetAttribute(mode).disp);
+                ModeSelectionBox.Items.Add(GetAttribute(mode).disp);
             }
             WriteMessage("Added Mode Selection Options");
+
+            // Add the DIRECTION enums to the dropdown direction selection box
+            foreach(DIRECTION direction in Enum.GetValues(typeof(DIRECTION))) {
+                DirectionSelectionBox.Items.Add(GetAttribute(direction).disp);
+            }
+            WriteMessage("Added Direction Selection Options");
 
             // Add available COM ports to the dropdown port selection box
             ComPortSelectionBox.DataSource = SerialPort.GetPortNames();
@@ -58,6 +68,10 @@ namespace ServoMotorDriver {
 
         void TryOpenSerialCommunication(string portName, bool reOpen = false) {
             // Check if the bluetooth has been connected
+            if (SerialComPort.PortName == portName && SerialComPort.IsOpen) {
+                WriteMessage("Communication is already established on the selected COM port");
+                return;
+            }
             if (reOpen = true && SerialComPort.IsOpen)
                 SerialComPort.Close();
             if (!SerialComPort.IsOpen) {
@@ -83,7 +97,28 @@ namespace ServoMotorDriver {
 
         // Called when the COM port selection is changed, updates COM port in use for serial communication
         private void OnComPortSelectionChanged(object sender, EventArgs e) {
+            WriteMessage("COM Port selection modified, updating serial communication");
+            TryOpenSerialCommunication(ComPortSelectionBox.SelectedItem.ToString(), true);
+        }
 
+        private void OnModeSelectionChanged(object sender, EventArgs e) {
+            foreach(MODE mode in Enum.GetValues(typeof(MODE))) {
+                if(ModeSelectionBox.Text == GetAttribute(mode).disp) {
+                    currentMode = mode;
+                    break;
+                }
+            }
+            WriteMessage("Selected mode updated to " + GetAttribute(currentMode).disp);
+        }
+
+        private void OnDirectionSelectionChanged(object sender, EventArgs e) {
+            foreach(DIRECTION direction in Enum.GetValues(typeof(DIRECTION))) {
+                if(DirectionSelectionBox.Text == GetAttribute(direction).disp) {
+                    currentDirection = direction;
+                    break;
+                }
+            }
+            WriteMessage("Selected direction updated to " + GetAttribute(currentDirection).disp);
         }
 
         #endregion

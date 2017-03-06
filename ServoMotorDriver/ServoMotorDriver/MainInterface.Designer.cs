@@ -38,6 +38,7 @@
             this.fileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.exitToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.ModeSelectionBox = new System.Windows.Forms.ComboBox();
+            this.DirectionSelectionBox = new System.Windows.Forms.ComboBox();
             this.StatusStrip.SuspendLayout();
             this.MenuStrip.SuspendLayout();
             this.SuspendLayout();
@@ -104,6 +105,17 @@
             this.ModeSelectionBox.Name = "ModeSelectionBox";
             this.ModeSelectionBox.Size = new System.Drawing.Size(252, 21);
             this.ModeSelectionBox.TabIndex = 3;
+            this.ModeSelectionBox.SelectedIndexChanged += new System.EventHandler(this.OnModeSelectionChanged);
+            // 
+            // DirectionSelectionBox
+            // 
+            this.DirectionSelectionBox.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.DirectionSelectionBox.FormattingEnabled = true;
+            this.DirectionSelectionBox.Location = new System.Drawing.Point(12, 108);
+            this.DirectionSelectionBox.Name = "DirectionSelectionBox";
+            this.DirectionSelectionBox.Size = new System.Drawing.Size(252, 21);
+            this.DirectionSelectionBox.TabIndex = 4;
+            this.DirectionSelectionBox.SelectedIndexChanged += new System.EventHandler(this.OnDirectionSelectionChanged);
             // 
             // MainInterface
             // 
@@ -111,6 +123,7 @@
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.AutoValidate = System.Windows.Forms.AutoValidate.EnableAllowFocusChange;
             this.ClientSize = new System.Drawing.Size(610, 326);
+            this.Controls.Add(this.DirectionSelectionBox);
             this.Controls.Add(this.ModeSelectionBox);
             this.Controls.Add(this.StatusStrip);
             this.Controls.Add(this.MenuStrip);
@@ -139,6 +152,7 @@
         private System.Windows.Forms.ToolStripMenuItem exitToolStripMenuItem;
         private System.Windows.Forms.ToolStripStatusLabel MessageLogStatusStrip;
         private System.Windows.Forms.ComboBox ModeSelectionBox;
+        private System.Windows.Forms.ComboBox DirectionSelectionBox;
     }
 }
 
