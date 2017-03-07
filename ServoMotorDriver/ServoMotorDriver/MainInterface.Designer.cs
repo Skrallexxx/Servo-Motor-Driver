@@ -39,10 +39,7 @@
             this.exitToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.ModeSelectionBox = new System.Windows.Forms.ComboBox();
             this.DirectionSelectionBox = new System.Windows.Forms.ComboBox();
-            this.time_graph = new ZedGraph.ZedGraphControl();
-            this.btn_select_yaxis_states = new System.Windows.Forms.Button();
-            this.contextMenuStrip1 = new System.Windows.Forms.ContextMenuStrip(this.components);
-            this.PlotGraphsTimer = new System.Windows.Forms.Timer(this.components);
+            this.Graph = new ZedGraph.ZedGraphControl();
             this.StatusStrip.SuspendLayout();
             this.MenuStrip.SuspendLayout();
             this.SuspendLayout();
@@ -67,7 +64,7 @@
             // 
             this.StatusStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.MessageLogStatusStrip});
-            this.StatusStrip.Location = new System.Drawing.Point(0, 513);
+            this.StatusStrip.Location = new System.Drawing.Point(0, 470);
             this.StatusStrip.Name = "StatusStrip";
             this.StatusStrip.Size = new System.Drawing.Size(963, 22);
             this.StatusStrip.TabIndex = 1;
@@ -121,55 +118,28 @@
             this.DirectionSelectionBox.TabIndex = 4;
             this.DirectionSelectionBox.SelectedIndexChanged += new System.EventHandler(this.OnDirectionSelectionChanged);
             // 
-            // time_graph
+            // Graph
             // 
-            this.time_graph.BackColor = System.Drawing.Color.Red;
-            this.time_graph.Cursor = System.Windows.Forms.Cursors.Default;
-            this.time_graph.Location = new System.Drawing.Point(300, 1);
-            this.time_graph.Margin = new System.Windows.Forms.Padding(2221, 1432, 2221, 1432);
-            this.time_graph.Name = "time_graph";
-            this.time_graph.ScrollGrace = 0D;
-            this.time_graph.ScrollMaxX = 0D;
-            this.time_graph.ScrollMaxY = 0D;
-            this.time_graph.ScrollMaxY2 = 0D;
-            this.time_graph.ScrollMinX = 0D;
-            this.time_graph.ScrollMinY = 0D;
-            this.time_graph.ScrollMinY2 = 0D;
-            this.time_graph.Size = new System.Drawing.Size(662, 454);
-            this.time_graph.TabIndex = 152;
-            // 
-            // btn_select_yaxis_states
-            // 
-            this.btn_select_yaxis_states.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-            this.btn_select_yaxis_states.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(192)))), ((int)(((byte)(255)))), ((int)(((byte)(192)))));
-            this.btn_select_yaxis_states.Font = new System.Drawing.Font("Arial", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.btn_select_yaxis_states.ImageAlign = System.Drawing.ContentAlignment.MiddleRight;
-            this.btn_select_yaxis_states.ImageKey = "(none)";
-            this.btn_select_yaxis_states.Location = new System.Drawing.Point(843, 462);
-            this.btn_select_yaxis_states.Name = "btn_select_yaxis_states";
-            this.btn_select_yaxis_states.Size = new System.Drawing.Size(108, 31);
-            this.btn_select_yaxis_states.TabIndex = 151;
-            this.btn_select_yaxis_states.Text = "Select Yaxis";
-            this.btn_select_yaxis_states.UseVisualStyleBackColor = false;
-            this.btn_select_yaxis_states.Click += new System.EventHandler(this.btn_select_yaxis_states_Click);
-            // 
-            // contextMenuStrip1
-            // 
-            this.contextMenuStrip1.Name = "contextMenuStrip2";
-            this.contextMenuStrip1.Size = new System.Drawing.Size(61, 4);
-            // 
-            // PlotGraphsTimer
-            // 
-            this.PlotGraphsTimer.Enabled = true;
+            this.Graph.IsShowCursorValues = true;
+            this.Graph.Location = new System.Drawing.Point(382, 27);
+            this.Graph.Name = "Graph";
+            this.Graph.ScrollGrace = 0D;
+            this.Graph.ScrollMaxX = 0D;
+            this.Graph.ScrollMaxY = 0D;
+            this.Graph.ScrollMaxY2 = 0D;
+            this.Graph.ScrollMinX = 0D;
+            this.Graph.ScrollMinY = 0D;
+            this.Graph.ScrollMinY2 = 0D;
+            this.Graph.Size = new System.Drawing.Size(544, 440);
+            this.Graph.TabIndex = 5;
             // 
             // MainInterface
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.AutoValidate = System.Windows.Forms.AutoValidate.EnableAllowFocusChange;
-            this.ClientSize = new System.Drawing.Size(963, 535);
-            this.Controls.Add(this.time_graph);
-            this.Controls.Add(this.btn_select_yaxis_states);
+            this.ClientSize = new System.Drawing.Size(963, 492);
+            this.Controls.Add(this.Graph);
             this.Controls.Add(this.DirectionSelectionBox);
             this.Controls.Add(this.ModeSelectionBox);
             this.Controls.Add(this.StatusStrip);
@@ -200,10 +170,7 @@
         private System.Windows.Forms.ToolStripStatusLabel MessageLogStatusStrip;
         private System.Windows.Forms.ComboBox ModeSelectionBox;
         private System.Windows.Forms.ComboBox DirectionSelectionBox;
-        internal ZedGraph.ZedGraphControl time_graph;
-        internal System.Windows.Forms.Button btn_select_yaxis_states;
-        private System.Windows.Forms.ContextMenuStrip contextMenuStrip1;
-        internal System.Windows.Forms.Timer PlotGraphsTimer;
+        private ZedGraph.ZedGraphControl Graph;
     }
 }
 
