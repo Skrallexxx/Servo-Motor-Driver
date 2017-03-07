@@ -9,7 +9,7 @@ namespace ServoMotorDriver {
 
         #region Variables and Control/Communication Properties
         // Received inputs and outgoing outputs
-        private int Input = 0;
+        private int Input1 = 0, Input2 = 0;
         private byte[] Inputs = new byte[4];
         private byte[] Outputs = new byte[4];
 
@@ -18,7 +18,7 @@ namespace ServoMotorDriver {
         DIRECTION currentDirection = DIRECTION.CLOCKWISE;
 
         // Transmission constants
-        private const byte START = 255, ZERO = 0;
+        private const byte START = 255, REQ = 0;
 
         // DAC Object
         private DAC dac = new DAC();
@@ -59,7 +59,11 @@ namespace ServoMotorDriver {
 
         // Send-Recieve method, runs every 10 ticks
         private void SendReceiveUpdate(object sender, EventArgs e) {
+            if (!SerialComPort.IsOpen)
+                TryOpenSerialCommunication(ComPortSelectionBox.SelectedItem.ToString());
 
+            // Check for any incoming data packets
+            ReadIncomingData();
         }
 
         #endregion
@@ -89,6 +93,43 @@ namespace ServoMotorDriver {
                     WriteError("Failed to open communication on " + portName);
                 }
             }
+        }
+
+        void ReadIncomingData() {
+            if (!SerialComPort.IsOpen) return;
+
+            // Send an update request for incoming values
+            SendOutgoingData(0, REQ);
+
+            if(SerialComPort.BytesToRead >= 4) {
+                Inputs[0] = (byte)SerialComPort.ReadByte();
+                if (Inputs[0] != START) return;
+                Inputs[1] = (byte)SerialComPort.ReadByte();
+                Inputs[2] = (byte)SerialComPort.ReadByte();
+                Inputs[3] = (byte)SerialComPort.ReadByte();
+
+                byte checksum = (byte)(Inputs[0] + Inputs[1] + Inputs[2]);
+                if (Inputs[3] != checksum) {
+                    WriteError("Received invalid data packet");
+                    return;
+                }
+
+                if (Inputs[1] == 1)
+                    Input1 = Inputs[2];
+                else if (Inputs[1] == 2)
+                    Input2 = Inputs[2];
+                else WriteError("Received invalid PORT byte " + Inputs[2]);
+            }
+
+        }
+
+        void SendOutgoingData(byte PORT, byte DATA) {
+            Outputs[0] = START;
+            Outputs[1] = PORT;
+            Outputs[2] = DATA;
+            Outputs[3] = (byte)(START + PORT + DATA);
+            if (!SerialComPort.IsOpen) return;
+            SerialComPort.Write(Outputs, 0, 4);
         }
 
         #endregion

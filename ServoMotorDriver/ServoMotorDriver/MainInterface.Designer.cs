@@ -47,7 +47,6 @@
             // SendReceiveTimer
             // 
             this.SendReceiveTimer.Enabled = true;
-            this.SendReceiveTimer.Interval = 10;
             this.SendReceiveTimer.Tick += new System.EventHandler(this.SendReceiveUpdate);
             // 
             // ComPortSelectionBox
