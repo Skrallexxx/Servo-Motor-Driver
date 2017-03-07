@@ -17,5 +17,9 @@
   <ItemGroup>
     <None Include="ArduinoCode.ino" />
   </ItemGroup>
- 
+  <ItemGroup>
+    <ClInclude Include="__vm\.ArduinoCode.vsarduino.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
 </Project>
