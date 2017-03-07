@@ -306,7 +306,7 @@ namespace ServoMotorDriver {
 
         }
 
-        private object curve_exists_in_graph(ZedGraphControl zgc, ref string curve_name)
+        private bool curve_exists_in_graph(ZedGraphControl zgc, ref string curve_name)
         {
             // check a graphs curve list for a curve wiuth the name curve_name
             GraphPane myPane = zgc.GraphPane;
@@ -348,6 +348,7 @@ namespace ServoMotorDriver {
         {
             // Show the contextstrip menu which allows a bandpass filter to be added to each state
             contextMenuStrip1.Show(btn_select_yaxis_states, 0, btn_select_yaxis_states.Height);
+            contextMenuStrip1.ItemClicked += new ToolStripItemClickedEventHandler(contextMenuStrip1_Click);
         }
 
         private void ContextMenuStrip1_Closing(object sender, ToolStripDropDownClosingEventArgs e)
@@ -361,19 +362,18 @@ namespace ServoMotorDriver {
             }
         }
 
-        public string[] selected_sigs = new string[1];
+        public string[] selected_sigs;
         public int selected_cnt = 0;
 
         public bool graph = false;
 
 
-        private void ContextMenuStrip1_Click(object sender, ToolStripItemClickedEventArgs e)
+        private void contextMenuStrip1_Click(object sender, ToolStripItemClickedEventArgs e)
         {
             //Get the text of the item that was clicked on.
-            ToolStripItem clickedItem;
-            clickedItem = e.ClickedItem;
-            string signalName = e.ClickedItem.Text;
-            bool itemChecked = e.ClickedItem.Selected;
+            var clickedItem = e.ClickedItem;
+            string signalName = clickedItem.Text;
+            bool itemChecked = clickedItem.Selected;
 
             selected_cnt = 0;
             graph = true;
@@ -385,10 +385,10 @@ namespace ServoMotorDriver {
                 if (stripItem.Name == signalName)
                 {
                     // Strip item checked parameter hasn't been updated yet so if its false then that means we will add a filter
-                    if (itemChecked == false)
+                    if (itemChecked == true)
                     {
                         // Check if the state is already being plotted 
-                        if (curve_exists_in_graph(time_graph, ref signalName) == null)
+                        if (curve_exists_in_graph(time_graph, ref signalName) == false)
                         {
                             // Get the state from all states list
                             string state_units = GetSignalFromName(signalName).Units;
@@ -411,11 +411,11 @@ namespace ServoMotorDriver {
                         delete_curve_from_Plot(time_graph, ref signalName);
                     }
                 }
-                if (itemChecked == true)
+                if (itemChecked == false)
                 {
                     Array.Resize(ref selected_sigs, selected_cnt + 1);
                     selected_sigs[selected_cnt] = signalName;
-                    selected_cnt += 1;
+                    selected_cnt -= 1;
                 }
             }
         }
