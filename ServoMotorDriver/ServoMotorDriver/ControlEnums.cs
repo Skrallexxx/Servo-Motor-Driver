@@ -8,13 +8,15 @@ namespace ServoMotorDriver {
         public enum MODE {
             [Properties("Freespin")]
             FREESPIN,
+            [Properties("Binary Control")]
+            BINARY,
             [Properties("Speed Control")]
             MANUAL_SPEED,
             [Properties("Speed Control (Dead-Band Compensated)")]
             MANUAL_SPEED_COMP,
             [Properties("Dead-Band Testing")]
             DEAD_BAND_TEST,
-            [Properties("Position Control Mode")]
+            [Properties("Position Control")]
             POSITIONAL
         }
 

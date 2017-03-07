@@ -4,20 +4,20 @@
  Author:	Alex
 */
 
-byte Output1 = 255, Output2 = 255;
-byte Input1 = 0, Input2 = 0;
+#include "stddef.h"
+byte DacValue = 255;
+byte DecoderA = 0, DecoderB = 0;
 
 byte checksum = 0;
 byte startByte = 0, portByte = 0, dataByte = 0, checkByte = 0;
 byte START = 255, REQ = 0;
 
-const byte Input1Port = 0, Input2Port = 1, Output1Port = 2, Output2Port = 3;
+const byte DecoderAPort = 0, DecoderBPort = 1, DACPort = 2, DACCheckPort = 3;
 
 // the setup function runs once when you press reset or power the board
 void setup() {
 	Serial.begin(9600);
 	DDRA = 0xFF;
-	DDRC = 0xFF;
 	DDRF = 0x00;
 	DDRK = 0x00;
 
@@ -41,28 +41,26 @@ void loop() {
 
 		if (checkByte != checksum) return;
 
-		// Request for Input1 data received, read the port and send data
-		if (portByte = Input1Port) {
-			Input1 = PINF;
-			SendOutgoingData(Input1Port, Input1);
+		// Request for Decoder Port A data received, read the port and send data
+		if (portByte = DecoderAPort) {
+			DecoderA = PINF;
+			SendOutgoingData(DecoderAPort, DecoderA);
 		}
 
-		// Request for Input2 data received, read the port and send data
-		if (portByte = Input2Port) {
-			Input2 = PINK;
-			SendOutgoingData(Input2Port, Input2);
+		// Request for Decoder Port B data received, read the port and send data
+		if (portByte = DecoderBPort) {
+			DecoderB = PINK;
+			SendOutgoingData(DecoderBPort, DecoderB);
 		}
 
-		// Output1 data received, write it to the port
-		if (portByte = Output1Port) {
-			Output1 = dataByte;
-			PORTA = Output1;
+		// DAC data received, write it to the DAC port
+		if (portByte = DACPort) {
+			DacValue = dataByte;
+			PORTA = DacValue;
 		}
 
-		// Output2 data received, write it to the port
-		if (portByte = Output2Port) {
-			Output2 = dataByte;
-			PORTC = Output2;
+		if (portByte = DACCheckPort) {
+			SendOutgoingData(DACCheckPort, DacValue);
 		}
 	}
 }
@@ -77,7 +75,7 @@ void SendOutgoingData(byte PORT, byte DATA) {
 byte bitFlip(byte value) {
 	byte bFlip = 0;
 	byte j = 7;
-	for (byte i = 0; i < 8; i++ {
+	for (byte i = 0; i < 8; i++) {
 		bitWrite(bFlip, i, bitRead(value, j));
 			j--;
 	}
