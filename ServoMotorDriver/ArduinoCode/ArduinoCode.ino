@@ -3,8 +3,6 @@
  Created:	3/7/2017 11:31:51 AM
  Author:	Alex
 */
-
-#include "stddef.h"
 byte DacValue = 255;
 byte DecoderA = 0, DecoderB = 0;
 
@@ -42,24 +40,24 @@ void loop() {
 		if (checkByte != checksum) return;
 
 		// Request for Decoder Port A data received, read the port and send data
-		if (portByte = DecoderAPort) {
+		if (portByte == DecoderAPort) {
 			DecoderA = PINF;
 			SendOutgoingData(DecoderAPort, DecoderA);
 		}
 
 		// Request for Decoder Port B data received, read the port and send data
-		if (portByte = DecoderBPort) {
+		if (portByte == DecoderBPort) {
 			DecoderB = PINK;
 			SendOutgoingData(DecoderBPort, DecoderB);
 		}
 
 		// DAC data received, write it to the DAC port
-		if (portByte = DACPort) {
+		if (portByte == DACPort) {
 			DacValue = dataByte;
 			PORTA = DacValue;
 		}
 
-		if (portByte = DACCheckPort) {
+		if (portByte == DACCheckPort) {
 			SendOutgoingData(DACCheckPort, DacValue);
 		}
 	}

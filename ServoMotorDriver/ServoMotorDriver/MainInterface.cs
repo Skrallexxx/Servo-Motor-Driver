@@ -14,13 +14,14 @@ namespace ServoMotorDriver {
         private byte[] Outputs = new byte[4];
         const byte DecoderAPort = 0, DecoderBPort = 1, DACPort = 2, DACCheckPort = 3;
         const byte START = 255, REQ = 0;
+        private decimal binaryMax = 255, binaryMin = 5;
 
         // Current selected mode and direction
         MODE currentMode = MODE.FREESPIN;
         DIRECTION currentDirection = DIRECTION.CLOCKWISE;
 
-        // DAC Object
-        private DAC dac = new DAC();
+        // DAC Object, stores Binary <> Voltage Gradient and Intercept
+        private DAC dac1 = new DAC(0.1206m, -15.697m);
 
         #endregion
 
@@ -52,6 +53,15 @@ namespace ServoMotorDriver {
             if (ComPortSelectionBox.Items.Count > 0)
                 TryOpenSerialCommunication(ComPortSelectionBox.SelectedItem.ToString());
             else WriteError("No Available COM Ports");
+
+            // Set NumericUpDown Bounds
+            VoltageControlVoltageUpDown.Maximum = CalculateVoltageFromBinary(binaryMax);
+            VoltageControlVoltageUpDown.Minimum = CalculateVoltageFromBinary(binaryMin);
+
+            // Set Bar Chart Bounds
+            VoltageControlNegativeChart.ChartAreas["ChartArea1"].Axes[1].Maximum = (double)(0 - CalculateVoltageFromBinary(binaryMin));
+            VoltageControlPositiveChart.ChartAreas["ChartArea1"].Axes[1].Maximum = (double)CalculateVoltageFromBinary(binaryMax);
+
         }
 
         #endregion
@@ -104,7 +114,7 @@ namespace ServoMotorDriver {
             SendOutgoingData(DecoderBPort, REQ);
             SendOutgoingData(DACCheckPort, REQ);
 
-            if(SerialComPort.BytesToRead >= 4) {
+            while(SerialComPort.BytesToRead >= 4) {
                 Inputs[0] = (byte)SerialComPort.ReadByte();
                 if (Inputs[0] != START) return;
                 Inputs[1] = (byte)SerialComPort.ReadByte();
@@ -124,6 +134,7 @@ namespace ServoMotorDriver {
                 else if (Inputs[1] == DACCheckPort) {
                     DacCurrentValue = Inputs[2];
                     RawControlCurrentTextBox.Text = DacCurrentValue.ToString();
+                    RawCurrentVoltageTextBox.Text = CalculateVoltageFromBinary(DacCurrentValue).ToString();
                 }
                 else WriteError("Received invalid PORT byte " + Inputs[2]);
             }
@@ -150,22 +161,31 @@ namespace ServoMotorDriver {
 
         // Called when the mode selection is changed, updates the current operation mode
         private void OnModeSelectionChanged(object sender, EventArgs e) {
-            foreach(MODE mode in Enum.GetValues(typeof(MODE))) {
-                if(ModeSelectionBox.Text == GetAttribute(mode).disp) {
+            foreach (MODE mode in Enum.GetValues(typeof(MODE))) {
+                if (ModeSelectionBox.Text == GetAttribute(mode).disp) {
                     currentMode = mode;
                     break;
                 }
             }
             WriteMessage("Selected mode updated to " + GetAttribute(currentMode).disp);
 
-            if (currentMode == MODE.BINARY) RawControlGroupBox.Enabled = true;
+            if (currentMode == MODE.BINARY || currentMode == MODE.MANUAL_SPEED) RawControlGroupBox.Enabled = true;
             else RawControlGroupBox.Enabled = false;
 
-            if (currentMode == MODE.MANUAL_SPEED || currentMode == MODE.MANUAL_SPEED_COMP) SpeedControlGroupBox.Enabled = true;
-            else SpeedControlGroupBox.Enabled = false;
+            if (currentMode == MODE.MANUAL_SPEED) {
+                SpeedControlGroupBox.Enabled = true;
+                RawControlUpDown.ReadOnly = true;
+            }
+            else {
+                SpeedControlGroupBox.Enabled = false;
+                RawControlUpDown.ReadOnly = false;
+            }
 
             if (currentMode == MODE.POSITIONAL) PositionControlGroupBox.Enabled = true;
             else PositionControlGroupBox.Enabled = false;
+
+            if (currentMode == MODE.DEAD_BAND_TEST) DeadBandTestingGroupBox.Enabled = true;
+            else DeadBandTestingGroupBox.Enabled = false;
         }
 
         // Called when the direction selection is changed, updates the current direction
@@ -180,10 +200,43 @@ namespace ServoMotorDriver {
         }
 
         private void OnRawControlValueChanged(object sender, EventArgs e) {
-            RawControlProgressBar.Value = (int)RawControlUpDown.Value;
+
+            RawBinaryChart.Series["Series1"].Points[0].YValues = new double[]{(double)RawControlUpDown.Value};
+            RawBinaryChart.Update();
             SendOutgoingData(DACPort, (byte)RawControlUpDown.Value);
+            RawVoltageTextBox.Text = CalculateVoltageFromBinary(RawControlUpDown.Value).ToString();
+
         }
 
+        private void OnVoltageControlValueChanged(object sender, EventArgs e) {
+            if(VoltageControlVoltageUpDown.Value < 0) {
+                VoltageControlNegativeChart.Series["Series1"].Points[0].YValues = new double[] { (double)(0 - VoltageControlVoltageUpDown.Value) };
+                VoltageControlPositiveChart.Series["Series1"].Points[0].YValues = new double[] { 0 };
+            }
+            else {
+                VoltageControlPositiveChart.Series["Series1"].Points[0].YValues = new double[] { (double)(VoltageControlVoltageUpDown.Value) };
+                VoltageControlNegativeChart.Series["Series1"].Points[0].YValues = new double[] { 0 };
+            }
+            VoltageControlPositiveChart.Update();
+            VoltageControlNegativeChart.Update();
+
+            RawControlUpDown.Value = CalculateBinaryFromVoltage(VoltageControlVoltageUpDown.Value);
+        }
+
+        #endregion
+
+        #region Data Calculation Methods
+        private decimal CalculateVoltageFromBinary(decimal binary) {
+            decimal voltage = dac1.gradient * binary + dac1.intercept;
+            return Math.Round(voltage, 2);
+        }
+
+        private decimal CalculateBinaryFromVoltage(decimal voltage) {
+            decimal binary = Math.Round((voltage - dac1.intercept) / dac1.gradient);
+            if (binary > 255) binary = 255;
+            if (binary < 5) binary = 5;
+            return Math.Round(binary);
+        }
         #endregion
 
         #region Debugging

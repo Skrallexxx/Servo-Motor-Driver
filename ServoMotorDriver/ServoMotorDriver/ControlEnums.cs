@@ -10,14 +10,12 @@ namespace ServoMotorDriver {
             FREESPIN,
             [Properties("Binary Control")]
             BINARY,
-            [Properties("Speed Control")]
+            [Properties("Voltage Control")]
             MANUAL_SPEED,
-            [Properties("Speed Control (Dead-Band Compensated)")]
-            MANUAL_SPEED_COMP,
-            [Properties("Dead-Band Testing")]
-            DEAD_BAND_TEST,
             [Properties("Position Control")]
-            POSITIONAL
+            POSITIONAL,
+            [Properties("Dead-Band Testing")]
+            DEAD_BAND_TEST
         }
 
         // Operation direction enums
