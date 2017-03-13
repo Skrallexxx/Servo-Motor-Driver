@@ -29,15 +29,17 @@
         private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
+            System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea1 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
+            System.Windows.Forms.DataVisualization.Charting.Series series1 = new System.Windows.Forms.DataVisualization.Charting.Series();
+            System.Windows.Forms.DataVisualization.Charting.DataPoint dataPoint1 = new System.Windows.Forms.DataVisualization.Charting.DataPoint(0D, 0D);
+            System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea2 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
+            System.Windows.Forms.DataVisualization.Charting.Series series2 = new System.Windows.Forms.DataVisualization.Charting.Series();
+            System.Windows.Forms.DataVisualization.Charting.DataPoint dataPoint2 = new System.Windows.Forms.DataVisualization.Charting.DataPoint(0D, 0D);
+            System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea3 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
+            System.Windows.Forms.DataVisualization.Charting.Series series3 = new System.Windows.Forms.DataVisualization.Charting.Series();
+            System.Windows.Forms.DataVisualization.Charting.DataPoint dataPoint3 = new System.Windows.Forms.DataVisualization.Charting.DataPoint(0D, 0D);
             System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea4 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
             System.Windows.Forms.DataVisualization.Charting.Series series4 = new System.Windows.Forms.DataVisualization.Charting.Series();
-            System.Windows.Forms.DataVisualization.Charting.DataPoint dataPoint4 = new System.Windows.Forms.DataVisualization.Charting.DataPoint(0D, 0D);
-            System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea5 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
-            System.Windows.Forms.DataVisualization.Charting.Series series5 = new System.Windows.Forms.DataVisualization.Charting.Series();
-            System.Windows.Forms.DataVisualization.Charting.DataPoint dataPoint5 = new System.Windows.Forms.DataVisualization.Charting.DataPoint(0D, 0D);
-            System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea6 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
-            System.Windows.Forms.DataVisualization.Charting.Series series6 = new System.Windows.Forms.DataVisualization.Charting.Series();
-            System.Windows.Forms.DataVisualization.Charting.DataPoint dataPoint6 = new System.Windows.Forms.DataVisualization.Charting.DataPoint(0D, 0D);
             this.SerialComPort = new System.IO.Ports.SerialPort(this.components);
             this.SendReceiveTimer = new System.Windows.Forms.Timer(this.components);
             this.ComPortSelectionBox = new System.Windows.Forms.ComboBox();
@@ -116,6 +118,7 @@
             this.AccelerationPlotDegRadioButton = new System.Windows.Forms.RadioButton();
             this.AccelerationPlotCurrentTextBox = new System.Windows.Forms.TextBox();
             this.AccelerationPlotCurrentLabel = new System.Windows.Forms.Label();
+            this.chart1 = new System.Windows.Forms.DataVisualization.Charting.Chart();
             this.StatusStrip.SuspendLayout();
             this.ConfigurationGroupBox.SuspendLayout();
             this.OutputsGroupBox.SuspendLayout();
@@ -138,6 +141,7 @@
             this.PositionPlotGroupBox.SuspendLayout();
             this.VelocityPlotGroupBox.SuspendLayout();
             this.AccelerationPlotGroupBox.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.chart1)).BeginInit();
             this.SuspendLayout();
             // 
             // SendReceiveTimer
@@ -369,31 +373,31 @@
             // 
             this.RawBinaryChart.BackColor = System.Drawing.SystemColors.Control;
             this.RawBinaryChart.BorderlineColor = System.Drawing.SystemColors.Control;
-            chartArea4.AxisX.Enabled = System.Windows.Forms.DataVisualization.Charting.AxisEnabled.False;
-            chartArea4.AxisX.MajorGrid.Enabled = false;
-            chartArea4.AxisX2.Enabled = System.Windows.Forms.DataVisualization.Charting.AxisEnabled.False;
-            chartArea4.AxisX2.MajorGrid.Enabled = false;
-            chartArea4.AxisY.Enabled = System.Windows.Forms.DataVisualization.Charting.AxisEnabled.False;
-            chartArea4.AxisY.MajorGrid.Enabled = false;
-            chartArea4.AxisY.Maximum = 255D;
-            chartArea4.AxisY.Minimum = 5D;
-            chartArea4.AxisY2.Enabled = System.Windows.Forms.DataVisualization.Charting.AxisEnabled.False;
-            chartArea4.AxisY2.MajorGrid.Enabled = false;
-            chartArea4.BackColor = System.Drawing.SystemColors.Control;
-            chartArea4.Name = "ChartArea1";
-            chartArea4.Position.Auto = false;
-            chartArea4.Position.Height = 100F;
-            chartArea4.Position.Width = 100F;
-            this.RawBinaryChart.ChartAreas.Add(chartArea4);
+            chartArea1.AxisX.Enabled = System.Windows.Forms.DataVisualization.Charting.AxisEnabled.False;
+            chartArea1.AxisX.MajorGrid.Enabled = false;
+            chartArea1.AxisX2.Enabled = System.Windows.Forms.DataVisualization.Charting.AxisEnabled.False;
+            chartArea1.AxisX2.MajorGrid.Enabled = false;
+            chartArea1.AxisY.Enabled = System.Windows.Forms.DataVisualization.Charting.AxisEnabled.False;
+            chartArea1.AxisY.MajorGrid.Enabled = false;
+            chartArea1.AxisY.Maximum = 255D;
+            chartArea1.AxisY.Minimum = 5D;
+            chartArea1.AxisY2.Enabled = System.Windows.Forms.DataVisualization.Charting.AxisEnabled.False;
+            chartArea1.AxisY2.MajorGrid.Enabled = false;
+            chartArea1.BackColor = System.Drawing.SystemColors.Control;
+            chartArea1.Name = "ChartArea1";
+            chartArea1.Position.Auto = false;
+            chartArea1.Position.Height = 100F;
+            chartArea1.Position.Width = 100F;
+            this.RawBinaryChart.ChartAreas.Add(chartArea1);
             this.RawBinaryChart.Location = new System.Drawing.Point(6, 95);
             this.RawBinaryChart.Margin = new System.Windows.Forms.Padding(0);
             this.RawBinaryChart.Name = "RawBinaryChart";
-            series4.BorderDashStyle = System.Windows.Forms.DataVisualization.Charting.ChartDashStyle.NotSet;
-            series4.ChartArea = "ChartArea1";
-            series4.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Bar;
-            series4.Name = "Series1";
-            series4.Points.Add(dataPoint4);
-            this.RawBinaryChart.Series.Add(series4);
+            series1.BorderDashStyle = System.Windows.Forms.DataVisualization.Charting.ChartDashStyle.NotSet;
+            series1.ChartArea = "ChartArea1";
+            series1.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Bar;
+            series1.Name = "Series1";
+            series1.Points.Add(dataPoint1);
+            this.RawBinaryChart.Series.Add(series1);
             this.RawBinaryChart.Size = new System.Drawing.Size(246, 20);
             this.RawBinaryChart.TabIndex = 15;
             this.RawBinaryChart.Text = "chart1";
@@ -562,27 +566,27 @@
             // VoltageControlNegativeChart
             // 
             this.VoltageControlNegativeChart.BackColor = System.Drawing.SystemColors.Control;
-            chartArea5.AxisX.Enabled = System.Windows.Forms.DataVisualization.Charting.AxisEnabled.False;
-            chartArea5.AxisX2.Enabled = System.Windows.Forms.DataVisualization.Charting.AxisEnabled.False;
-            chartArea5.AxisY.Enabled = System.Windows.Forms.DataVisualization.Charting.AxisEnabled.False;
-            chartArea5.AxisY.IsReversed = true;
-            chartArea5.AxisY.Maximum = 16D;
-            chartArea5.AxisY.Minimum = 0D;
-            chartArea5.AxisY2.Enabled = System.Windows.Forms.DataVisualization.Charting.AxisEnabled.False;
-            chartArea5.BackColor = System.Drawing.SystemColors.Control;
-            chartArea5.Name = "ChartArea1";
-            chartArea5.Position.Auto = false;
-            chartArea5.Position.Height = 100F;
-            chartArea5.Position.Width = 100F;
-            this.VoltageControlNegativeChart.ChartAreas.Add(chartArea5);
+            chartArea2.AxisX.Enabled = System.Windows.Forms.DataVisualization.Charting.AxisEnabled.False;
+            chartArea2.AxisX2.Enabled = System.Windows.Forms.DataVisualization.Charting.AxisEnabled.False;
+            chartArea2.AxisY.Enabled = System.Windows.Forms.DataVisualization.Charting.AxisEnabled.False;
+            chartArea2.AxisY.IsReversed = true;
+            chartArea2.AxisY.Maximum = 16D;
+            chartArea2.AxisY.Minimum = 0D;
+            chartArea2.AxisY2.Enabled = System.Windows.Forms.DataVisualization.Charting.AxisEnabled.False;
+            chartArea2.BackColor = System.Drawing.SystemColors.Control;
+            chartArea2.Name = "ChartArea1";
+            chartArea2.Position.Auto = false;
+            chartArea2.Position.Height = 100F;
+            chartArea2.Position.Width = 100F;
+            this.VoltageControlNegativeChart.ChartAreas.Add(chartArea2);
             this.VoltageControlNegativeChart.Location = new System.Drawing.Point(6, 78);
             this.VoltageControlNegativeChart.Name = "VoltageControlNegativeChart";
-            series5.ChartArea = "ChartArea1";
-            series5.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Bar;
-            series5.Name = "Series1";
-            dataPoint5.Color = System.Drawing.Color.Red;
-            series5.Points.Add(dataPoint5);
-            this.VoltageControlNegativeChart.Series.Add(series5);
+            series2.ChartArea = "ChartArea1";
+            series2.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Bar;
+            series2.Name = "Series1";
+            dataPoint2.Color = System.Drawing.Color.Red;
+            series2.Points.Add(dataPoint2);
+            this.VoltageControlNegativeChart.Series.Add(series2);
             this.VoltageControlNegativeChart.Size = new System.Drawing.Size(123, 20);
             this.VoltageControlNegativeChart.TabIndex = 16;
             this.VoltageControlNegativeChart.Text = "chart2";
@@ -590,25 +594,25 @@
             // VoltageControlPositiveChart
             // 
             this.VoltageControlPositiveChart.BackColor = System.Drawing.SystemColors.Control;
-            chartArea6.AxisX.Enabled = System.Windows.Forms.DataVisualization.Charting.AxisEnabled.False;
-            chartArea6.AxisX2.Enabled = System.Windows.Forms.DataVisualization.Charting.AxisEnabled.False;
-            chartArea6.AxisY.Enabled = System.Windows.Forms.DataVisualization.Charting.AxisEnabled.False;
-            chartArea6.AxisY.Maximum = 16D;
-            chartArea6.AxisY.Minimum = 0D;
-            chartArea6.AxisY2.Enabled = System.Windows.Forms.DataVisualization.Charting.AxisEnabled.False;
-            chartArea6.BackColor = System.Drawing.SystemColors.Control;
-            chartArea6.Name = "ChartArea1";
-            chartArea6.Position.Auto = false;
-            chartArea6.Position.Height = 100F;
-            chartArea6.Position.Width = 100F;
-            this.VoltageControlPositiveChart.ChartAreas.Add(chartArea6);
+            chartArea3.AxisX.Enabled = System.Windows.Forms.DataVisualization.Charting.AxisEnabled.False;
+            chartArea3.AxisX2.Enabled = System.Windows.Forms.DataVisualization.Charting.AxisEnabled.False;
+            chartArea3.AxisY.Enabled = System.Windows.Forms.DataVisualization.Charting.AxisEnabled.False;
+            chartArea3.AxisY.Maximum = 16D;
+            chartArea3.AxisY.Minimum = 0D;
+            chartArea3.AxisY2.Enabled = System.Windows.Forms.DataVisualization.Charting.AxisEnabled.False;
+            chartArea3.BackColor = System.Drawing.SystemColors.Control;
+            chartArea3.Name = "ChartArea1";
+            chartArea3.Position.Auto = false;
+            chartArea3.Position.Height = 100F;
+            chartArea3.Position.Width = 100F;
+            this.VoltageControlPositiveChart.ChartAreas.Add(chartArea3);
             this.VoltageControlPositiveChart.Location = new System.Drawing.Point(129, 78);
             this.VoltageControlPositiveChart.Name = "VoltageControlPositiveChart";
-            series6.ChartArea = "ChartArea1";
-            series6.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Bar;
-            series6.Name = "Series1";
-            series6.Points.Add(dataPoint6);
-            this.VoltageControlPositiveChart.Series.Add(series6);
+            series3.ChartArea = "ChartArea1";
+            series3.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Bar;
+            series3.Name = "Series1";
+            series3.Points.Add(dataPoint3);
+            this.VoltageControlPositiveChart.Series.Add(series3);
             this.VoltageControlPositiveChart.Size = new System.Drawing.Size(123, 20);
             this.VoltageControlPositiveChart.TabIndex = 15;
             this.VoltageControlPositiveChart.Text = "chart1";
@@ -1020,12 +1024,36 @@
             this.AccelerationPlotCurrentLabel.TabIndex = 15;
             this.AccelerationPlotCurrentLabel.Text = "Current Accel.";
             // 
+            // chart1
+            // 
+            chartArea4.AxisX.Enabled = System.Windows.Forms.DataVisualization.Charting.AxisEnabled.False;
+            chartArea4.AxisX2.Enabled = System.Windows.Forms.DataVisualization.Charting.AxisEnabled.False;
+            chartArea4.AxisY.MajorGrid.Enabled = false;
+            chartArea4.AxisY.MajorTickMark.Enabled = false;
+            chartArea4.AxisY2.Enabled = System.Windows.Forms.DataVisualization.Charting.AxisEnabled.False;
+            chartArea4.Name = "ChartArea1";
+            chartArea4.Position.Auto = false;
+            chartArea4.Position.Height = 94F;
+            chartArea4.Position.Width = 100F;
+            chartArea4.Position.Y = 3F;
+            this.chart1.ChartAreas.Add(chartArea4);
+            this.chart1.Location = new System.Drawing.Point(542, 16);
+            this.chart1.Name = "chart1";
+            series4.ChartArea = "ChartArea1";
+            series4.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Spline;
+            series4.Name = "Series1";
+            this.chart1.Series.Add(series4);
+            this.chart1.Size = new System.Drawing.Size(300, 97);
+            this.chart1.TabIndex = 15;
+            this.chart1.Text = "chart1";
+            // 
             // MainInterface
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.AutoValidate = System.Windows.Forms.AutoValidate.EnableAllowFocusChange;
             this.ClientSize = new System.Drawing.Size(854, 596);
+            this.Controls.Add(this.chart1);
             this.Controls.Add(this.AccelerationPlotGroupBox);
             this.Controls.Add(this.VelocityPlotGroupBox);
             this.Controls.Add(this.PositionPlotGroupBox);
@@ -1068,6 +1096,7 @@
             this.VelocityPlotGroupBox.PerformLayout();
             this.AccelerationPlotGroupBox.ResumeLayout(false);
             this.AccelerationPlotGroupBox.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.chart1)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -1153,6 +1182,7 @@
         private System.Windows.Forms.Label label2;
         private System.Windows.Forms.Label label1;
         private System.Windows.Forms.TextBox RawVoltageTextBox;
+        private System.Windows.Forms.DataVisualization.Charting.Chart chart1;
     }
 }
 
