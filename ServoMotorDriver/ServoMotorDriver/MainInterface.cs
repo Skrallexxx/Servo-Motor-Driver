@@ -15,6 +15,7 @@ namespace ServoMotorDriver {
         const byte DecoderAPort = 0, DecoderBPort = 1, DACPort = 2, DACCheckPort = 3;
         const byte START = 255, REQ = 0;
         private decimal binaryMax = 255, binaryMin = 5;
+        private byte deadBandMin = 120, deadBandMax = 135;
 
         // Current selected mode and direction
         MODE currentMode = MODE.FREESPIN;
@@ -62,6 +63,9 @@ namespace ServoMotorDriver {
             VoltageControlNegativeChart.ChartAreas["ChartArea1"].Axes[1].Maximum = (double)(0 - CalculateVoltageFromBinary(binaryMin));
             VoltageControlPositiveChart.ChartAreas["ChartArea1"].Axes[1].Maximum = (double)CalculateVoltageFromBinary(binaryMax);
 
+            // Set Dead-Band Bounds
+            DeadBandLowerUpDown.Value = deadBandMin;
+            DeadBandUpperUpDown.Value = deadBandMax;
         }
 
         #endregion
@@ -172,14 +176,8 @@ namespace ServoMotorDriver {
             if (currentMode == MODE.BINARY || currentMode == MODE.MANUAL_SPEED) RawControlGroupBox.Enabled = true;
             else RawControlGroupBox.Enabled = false;
 
-            if (currentMode == MODE.MANUAL_SPEED) {
-                SpeedControlGroupBox.Enabled = true;
-                RawControlUpDown.ReadOnly = true;
-            }
-            else {
-                SpeedControlGroupBox.Enabled = false;
-                RawControlUpDown.ReadOnly = false;
-            }
+            if (currentMode == MODE.MANUAL_SPEED) SpeedControlGroupBox.Enabled = true;
+            else SpeedControlGroupBox.Enabled = false;
 
             if (currentMode == MODE.POSITIONAL) PositionControlGroupBox.Enabled = true;
             else PositionControlGroupBox.Enabled = false;
@@ -200,12 +198,18 @@ namespace ServoMotorDriver {
         }
 
         private void OnRawControlValueChanged(object sender, EventArgs e) {
-
             RawBinaryChart.Series["Series1"].Points[0].YValues = new double[]{(double)RawControlUpDown.Value};
             RawBinaryChart.Update();
-            SendOutgoingData(DACPort, (byte)RawControlUpDown.Value);
-            RawVoltageTextBox.Text = CalculateVoltageFromBinary(RawControlUpDown.Value).ToString();
 
+            byte compensated = (byte)RawControlUpDown.Value;
+            if(DeadBandCompensationCheckBox.Checked && RawControlUpDown.Value > deadBandMin && RawControlUpDown.Value < deadBandMax) {
+                if (RawControlUpDown.Value > (deadBandMin + (deadBandMax - deadBandMin) / 2))
+                    compensated = deadBandMax;
+                else compensated = deadBandMin;
+            }
+
+            SendOutgoingData(DACPort, compensated);
+            RawVoltageTextBox.Text = CalculateVoltageFromBinary(compensated).ToString();
         }
 
         private void OnVoltageControlValueChanged(object sender, EventArgs e) {
