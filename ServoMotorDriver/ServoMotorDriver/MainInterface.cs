@@ -2,7 +2,7 @@
 using System.Windows.Forms;
 using System.IO.Ports;
 using System.Diagnostics;
-using static ServoMotorDriver.ControlEnums;
+using ServoMotorDriver;
 
 namespace ServoMotorDriver {
     public partial class MainInterface : Form {
@@ -15,11 +15,11 @@ namespace ServoMotorDriver {
         const byte DecoderAPort = 0, DecoderBPort = 1, DACPort = 2, DACCheckPort = 3;
         const byte START = 255, REQ = 0;
         private decimal binaryMax = 255, binaryMin = 5;
-        private byte deadBandMin = 120, deadBandMax = 135;
+        private byte deadBandMin = 113, deadBandMax = 146;
 
         // Current selected mode and direction
-        MODE currentMode = MODE.FREESPIN;
-        DIRECTION currentDirection = DIRECTION.CLOCKWISE;
+        ControlEnums.MODE currentMode = ControlEnums.MODE.FREESPIN;
+        ControlEnums.DIRECTION currentDirection = ControlEnums.DIRECTION.CLOCKWISE;
 
         // DAC Object, stores Binary <> Voltage Gradient and Intercept
         private DAC dac1 = new DAC(0.1206m, -15.697m);
@@ -33,15 +33,15 @@ namespace ServoMotorDriver {
             InitializeComponent();
 
             // Add the MODE enums to the dropdown mode selection box
-            foreach(MODE mode in Enum.GetValues(typeof(MODE))) {
-                ModeSelectionBox.Items.Add(GetAttribute(mode).disp);
+            foreach (ControlEnums.MODE mode in Enum.GetValues(typeof(ControlEnums.MODE))) {
+                ModeSelectionBox.Items.Add(ControlEnums.GetAttribute(mode).disp);
             }
             ModeSelectionBox.SelectedIndex = 0;
             WriteMessage("Added Mode Selection Options");
 
             // Add the DIRECTION enums to the dropdown direction selection box
-            foreach(DIRECTION direction in Enum.GetValues(typeof(DIRECTION))) {
-                DirectionSelectionBox.Items.Add(GetAttribute(direction).disp);
+            foreach (ControlEnums.DIRECTION direction in Enum.GetValues(typeof(ControlEnums.DIRECTION))) {
+                DirectionSelectionBox.Items.Add(ControlEnums.GetAttribute(direction).disp);
             }
             DirectionSelectionBox.SelectedIndex = 0;
             WriteMessage("Added Direction Selection Options");
@@ -74,7 +74,7 @@ namespace ServoMotorDriver {
 
         // Send-Recieve method, runs every 10 ticks
         private void SendReceiveUpdate(object sender, EventArgs e) {
-            if (!SerialComPort.IsOpen)
+            if (!SerialComPort.IsOpen && ComPortSelectionBox.Items.Count > 0)
                 TryOpenSerialCommunication(ComPortSelectionBox.SelectedItem.ToString());
 
             // Check for any incoming data packets
@@ -165,46 +165,51 @@ namespace ServoMotorDriver {
 
         // Called when the mode selection is changed, updates the current operation mode
         private void OnModeSelectionChanged(object sender, EventArgs e) {
-            foreach (MODE mode in Enum.GetValues(typeof(MODE))) {
-                if (ModeSelectionBox.Text == GetAttribute(mode).disp) {
+            foreach (ControlEnums.MODE mode in Enum.GetValues(typeof(ControlEnums.MODE))) {
+                if (ModeSelectionBox.Text == ControlEnums.GetAttribute(mode).disp) {
                     currentMode = mode;
                     break;
                 }
             }
-            WriteMessage("Selected mode updated to " + GetAttribute(currentMode).disp);
+            WriteMessage("Selected mode updated to " + ControlEnums.GetAttribute(currentMode).disp);
 
-            if (currentMode == MODE.BINARY || currentMode == MODE.MANUAL_SPEED) RawControlGroupBox.Enabled = true;
+            if (currentMode == ControlEnums.MODE.BINARY || currentMode == ControlEnums.MODE.MANUAL_SPEED) RawControlGroupBox.Enabled = true;
             else RawControlGroupBox.Enabled = false;
 
-            if (currentMode == MODE.MANUAL_SPEED) SpeedControlGroupBox.Enabled = true;
+            if (currentMode == ControlEnums.MODE.MANUAL_SPEED) SpeedControlGroupBox.Enabled = true;
             else SpeedControlGroupBox.Enabled = false;
 
-            if (currentMode == MODE.POSITIONAL) PositionControlGroupBox.Enabled = true;
+            if (currentMode == ControlEnums.MODE.POSITIONAL) PositionControlGroupBox.Enabled = true;
             else PositionControlGroupBox.Enabled = false;
 
-            if (currentMode == MODE.DEAD_BAND_TEST) DeadBandTestingGroupBox.Enabled = true;
+            if (currentMode == ControlEnums.MODE.DEAD_BAND_TEST) DeadBandTestingGroupBox.Enabled = true;
             else DeadBandTestingGroupBox.Enabled = false;
         }
 
         // Called when the direction selection is changed, updates the current direction
         private void OnDirectionSelectionChanged(object sender, EventArgs e) {
-            foreach(DIRECTION direction in Enum.GetValues(typeof(DIRECTION))) {
-                if(DirectionSelectionBox.Text == GetAttribute(direction).disp) {
+            foreach (ControlEnums.DIRECTION direction in Enum.GetValues(typeof(ControlEnums.DIRECTION))) {
+                if (DirectionSelectionBox.Text == ControlEnums.GetAttribute(direction).disp) {
                     currentDirection = direction;
                     break;
                 }
             }
-            WriteMessage("Selected direction updated to " + GetAttribute(currentDirection).disp);
+            WriteMessage("Selected direction updated to " + ControlEnums.GetAttribute(currentDirection).disp);
         }
 
         private void OnRawControlValueChanged(object sender, EventArgs e) {
             RawBinaryChart.Series["Series1"].Points[0].YValues = new double[]{(double)RawControlUpDown.Value};
             RawBinaryChart.Update();
 
+            WriteMessage("binary value of 0v = " + CalculateBinaryFromVoltage(0));
+
             byte compensated = (byte)RawControlUpDown.Value;
             if(DeadBandCompensationCheckBox.Checked && RawControlUpDown.Value > deadBandMin && RawControlUpDown.Value < deadBandMax) {
-                if (RawControlUpDown.Value > (deadBandMin + (deadBandMax - deadBandMin) / 2))
+                if (RawControlUpDown.Value > CalculateBinaryFromVoltage(0))
                     compensated = deadBandMax;
+                else if (RawControlUpDown.Value == CalculateBinaryFromVoltage(0)) {
+                    compensated = CalculateBinaryFromVoltage(0);
+                }
                 else compensated = deadBandMin;
             }
 
@@ -227,6 +232,14 @@ namespace ServoMotorDriver {
             RawControlUpDown.Value = CalculateBinaryFromVoltage(VoltageControlVoltageUpDown.Value);
         }
 
+        private void OnDeadBandMinValueChanged(object sender, EventArgs e) {
+            deadBandMin = (byte)DeadBandLowerUpDown.Value;
+        }
+
+        private void OnDeadBandMaxValueChanged(object sender, EventArgs e) {
+            deadBandMax = (byte)DeadBandUpperUpDown.Value;
+        }
+
         #endregion
 
         #region Data Calculation Methods
@@ -235,11 +248,11 @@ namespace ServoMotorDriver {
             return Math.Round(voltage, 2);
         }
 
-        private decimal CalculateBinaryFromVoltage(decimal voltage) {
+        private byte CalculateBinaryFromVoltage(decimal voltage) {
             decimal binary = Math.Round((voltage - dac1.intercept) / dac1.gradient);
             if (binary > 255) binary = 255;
             if (binary < 5) binary = 5;
-            return Math.Round(binary);
+            return (byte)Math.Round(binary);
         }
         #endregion
 

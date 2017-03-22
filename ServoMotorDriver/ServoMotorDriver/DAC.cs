@@ -2,7 +2,7 @@
 
 namespace ServoMotorDriver
 {
-    public partial class MainInterface : Form
+    public partial class MainInterface
     {
         // ==================================================================== DAC Class ==================================================================== //
 

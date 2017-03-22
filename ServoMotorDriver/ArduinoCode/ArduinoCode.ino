@@ -28,7 +28,7 @@ void loop() {
 	if (!Serial)
 		Serial.begin(9600);
 
-	while (Serial.available >= 4) {
+	while (Serial.available() >= 4) {
 		startByte = Serial.read();
 
 		if (startByte != START) return;
