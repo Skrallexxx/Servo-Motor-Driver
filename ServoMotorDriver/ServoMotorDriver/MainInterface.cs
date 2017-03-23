@@ -197,11 +197,10 @@ namespace ServoMotorDriver {
             WriteMessage("Selected direction updated to " + ControlEnums.GetAttribute(currentDirection).disp);
         }
 
+        // Called when the binary output value is changed, and sends the value to the arduino
         private void OnRawControlValueChanged(object sender, EventArgs e) {
             RawBinaryChart.Series["Series1"].Points[0].YValues = new double[]{(double)RawControlUpDown.Value};
             RawBinaryChart.Update();
-
-            WriteMessage("binary value of 0v = " + CalculateBinaryFromVoltage(0));
 
             byte compensated = (byte)RawControlUpDown.Value;
             if(DeadBandCompensationCheckBox.Checked && RawControlUpDown.Value > deadBandMin && RawControlUpDown.Value < deadBandMax) {
@@ -213,23 +212,30 @@ namespace ServoMotorDriver {
                 else compensated = deadBandMin;
             }
 
+            VoltageControlVoltageUpDown.Value = CalculateVoltageFromBinary(RawControlUpDown.Value);
+            //UpdateVoltageCharts(CalculateVoltageFromBinary(RawControlUpDown.Value));
             SendOutgoingData(DACPort, compensated);
             RawVoltageTextBox.Text = CalculateVoltageFromBinary(compensated).ToString();
         }
 
+        // 
         private void OnVoltageControlValueChanged(object sender, EventArgs e) {
-            if(VoltageControlVoltageUpDown.Value < 0) {
-                VoltageControlNegativeChart.Series["Series1"].Points[0].YValues = new double[] { (double)(0 - VoltageControlVoltageUpDown.Value) };
+            UpdateVoltageCharts(VoltageControlVoltageUpDown.Value);
+            RawControlUpDown.Value = CalculateBinaryFromVoltage(VoltageControlVoltageUpDown.Value);
+        }
+
+        private void UpdateVoltageCharts(decimal dataValue) {
+            if (dataValue < 0) {
+                VoltageControlNegativeChart.Series["Series1"].Points[0].YValues = new double[] { (double)(0 - dataValue) };
                 VoltageControlPositiveChart.Series["Series1"].Points[0].YValues = new double[] { 0 };
             }
             else {
-                VoltageControlPositiveChart.Series["Series1"].Points[0].YValues = new double[] { (double)(VoltageControlVoltageUpDown.Value) };
+                VoltageControlPositiveChart.Series["Series1"].Points[0].YValues = new double[] { (double)(dataValue) };
                 VoltageControlNegativeChart.Series["Series1"].Points[0].YValues = new double[] { 0 };
             }
+
             VoltageControlPositiveChart.Update();
             VoltageControlNegativeChart.Update();
-
-            RawControlUpDown.Value = CalculateBinaryFromVoltage(VoltageControlVoltageUpDown.Value);
         }
 
         private void OnDeadBandMinValueChanged(object sender, EventArgs e) {
