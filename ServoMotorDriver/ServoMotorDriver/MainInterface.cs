@@ -9,13 +9,25 @@ namespace ServoMotorDriver {
 
         #region Variables and Control/Communication Properties
         // Received inputs and outgoing outputs
-        private int DecoderA = 0, DecoderB = 0, DacCurrentValue = 0;
+        private int decoderHigh = 0, decoderLow = 0, dacCurrentValue = 0;
         private byte[] Inputs = new byte[4];
         private byte[] Outputs = new byte[4];
-        const byte DecoderAPort = 0, DecoderBPort = 1, DACPort = 2, DACCheckPort = 3;
+
+        // Communication Variables
+        const byte decoderHighPort = 0, decoderLowPort = 1, DACPort = 2, DACCheckPort = 3;
         const byte START = 255, REQ = 0;
+
+        // Tuning and Deadband Variables
         private decimal binaryMax = 255, binaryMin = 5;
         private byte deadBandMin = 113, deadBandMax = 146;
+
+        // Decoder Position, Velocity and Acceleration Variables
+        Int16 currentPos = 0;
+        Int16 totalPos = 0;
+        Int16 startTime = 0;
+        Int16 currentTime = 0;
+
+        System.DateTime time = new System.DateTime();
 
         // Current selected mode and direction
         ControlEnums.MODE currentMode = ControlEnums.MODE.FREESPIN;
@@ -31,6 +43,7 @@ namespace ServoMotorDriver {
         public MainInterface() {
             Debug.WriteLine("Servo Motor Driver Starting Up...");
             InitializeComponent();
+            startTime = (Int16)time.Second;
 
             // Add the MODE enums to the dropdown mode selection box
             foreach (ControlEnums.MODE mode in Enum.GetValues(typeof(ControlEnums.MODE))) {
@@ -79,6 +92,8 @@ namespace ServoMotorDriver {
 
             // Check for any incoming data packets
             ReadIncomingData();
+
+            textBox3.Text = ((Int16)((decoderHigh << 8) | decoderLow)).ToString();
         }
 
         #endregion
@@ -114,8 +129,8 @@ namespace ServoMotorDriver {
             if (!SerialComPort.IsOpen) return;
 
             // Send an update request for incoming values
-            SendOutgoingData(DecoderAPort, REQ);
-            SendOutgoingData(DecoderBPort, REQ);
+            SendOutgoingData(decoderHighPort, REQ);
+            SendOutgoingData(decoderLowPort, REQ);
             SendOutgoingData(DACCheckPort, REQ);
 
             while(SerialComPort.BytesToRead >= 4) {
@@ -131,14 +146,18 @@ namespace ServoMotorDriver {
                     return;
                 }
 
-                if (Inputs[1] == DecoderAPort)
-                    DecoderA = Inputs[2];
-                else if (Inputs[1] == DecoderBPort)
-                    DecoderB = Inputs[2];
+                if (Inputs[1] == decoderHighPort) {
+                    decoderHigh = Inputs[2];
+                    textBox1.Text = decoderHigh.ToString();
+                }
+                else if (Inputs[1] == decoderLowPort) {
+                    decoderLow = Inputs[2];
+                    textBox2.Text = decoderLow.ToString();
+                }
                 else if (Inputs[1] == DACCheckPort) {
-                    DacCurrentValue = Inputs[2];
-                    RawControlCurrentTextBox.Text = DacCurrentValue.ToString();
-                    RawCurrentVoltageTextBox.Text = CalculateVoltageFromBinary(DacCurrentValue).ToString();
+                    dacCurrentValue = Inputs[2];
+                    RawControlCurrentTextBox.Text = dacCurrentValue.ToString();
+                    RawCurrentVoltageTextBox.Text = CalculateVoltageFromBinary(dacCurrentValue).ToString();
                 }
                 else WriteError("Received invalid PORT byte " + Inputs[2]);
             }
@@ -259,6 +278,11 @@ namespace ServoMotorDriver {
             if (binary > 255) binary = 255;
             if (binary < 5) binary = 5;
             return (byte)Math.Round(binary);
+        }
+        #endregion
+
+        #region Data Plotting Methods
+        private void PlotPosition(Int16 startTime, Int16 currentTime, String data) {
         }
         #endregion
 

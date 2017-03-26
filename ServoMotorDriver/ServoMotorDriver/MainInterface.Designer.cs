@@ -29,17 +29,17 @@
         private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
-            System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea9 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
-            System.Windows.Forms.DataVisualization.Charting.Series series9 = new System.Windows.Forms.DataVisualization.Charting.Series();
-            System.Windows.Forms.DataVisualization.Charting.DataPoint dataPoint7 = new System.Windows.Forms.DataVisualization.Charting.DataPoint(0D, 0D);
-            System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea10 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
-            System.Windows.Forms.DataVisualization.Charting.Series series10 = new System.Windows.Forms.DataVisualization.Charting.Series();
-            System.Windows.Forms.DataVisualization.Charting.DataPoint dataPoint8 = new System.Windows.Forms.DataVisualization.Charting.DataPoint(0D, 0D);
-            System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea11 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
-            System.Windows.Forms.DataVisualization.Charting.Series series11 = new System.Windows.Forms.DataVisualization.Charting.Series();
-            System.Windows.Forms.DataVisualization.Charting.DataPoint dataPoint9 = new System.Windows.Forms.DataVisualization.Charting.DataPoint(0D, 0D);
-            System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea12 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
-            System.Windows.Forms.DataVisualization.Charting.Series series12 = new System.Windows.Forms.DataVisualization.Charting.Series();
+            System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea1 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
+            System.Windows.Forms.DataVisualization.Charting.Series series1 = new System.Windows.Forms.DataVisualization.Charting.Series();
+            System.Windows.Forms.DataVisualization.Charting.DataPoint dataPoint1 = new System.Windows.Forms.DataVisualization.Charting.DataPoint(0D, 0D);
+            System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea2 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
+            System.Windows.Forms.DataVisualization.Charting.Series series2 = new System.Windows.Forms.DataVisualization.Charting.Series();
+            System.Windows.Forms.DataVisualization.Charting.DataPoint dataPoint2 = new System.Windows.Forms.DataVisualization.Charting.DataPoint(0D, 0D);
+            System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea3 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
+            System.Windows.Forms.DataVisualization.Charting.Series series3 = new System.Windows.Forms.DataVisualization.Charting.Series();
+            System.Windows.Forms.DataVisualization.Charting.DataPoint dataPoint3 = new System.Windows.Forms.DataVisualization.Charting.DataPoint(0D, 0D);
+            System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea4 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
+            System.Windows.Forms.DataVisualization.Charting.Series series4 = new System.Windows.Forms.DataVisualization.Charting.Series();
             this.SerialComPort = new System.IO.Ports.SerialPort(this.components);
             this.SendReceiveTimer = new System.Windows.Forms.Timer(this.components);
             this.ComPortSelectionBox = new System.Windows.Forms.ComboBox();
@@ -47,7 +47,6 @@
             this.MessageLogStatusStrip = new System.Windows.Forms.ToolStripStatusLabel();
             this.ModeSelectionBox = new System.Windows.Forms.ComboBox();
             this.DirectionSelectionBox = new System.Windows.Forms.ComboBox();
-            this.PositionGraph = new ZedGraph.ZedGraphControl();
             this.ComPortLabel = new System.Windows.Forms.Label();
             this.ModeSelectionLabel = new System.Windows.Forms.Label();
             this.DirectionSelectionLabel = new System.Windows.Forms.Label();
@@ -118,6 +117,10 @@
             this.AccelerationPlotDegRadioButton = new System.Windows.Forms.RadioButton();
             this.AccelerationPlotCurrentTextBox = new System.Windows.Forms.TextBox();
             this.AccelerationPlotCurrentLabel = new System.Windows.Forms.Label();
+            this.GraphsGroupBox = new System.Windows.Forms.GroupBox();
+            this.textBox1 = new System.Windows.Forms.TextBox();
+            this.textBox2 = new System.Windows.Forms.TextBox();
+            this.textBox3 = new System.Windows.Forms.TextBox();
             this.chart1 = new System.Windows.Forms.DataVisualization.Charting.Chart();
             this.StatusStrip.SuspendLayout();
             this.ConfigurationGroupBox.SuspendLayout();
@@ -141,12 +144,14 @@
             this.PositionPlotGroupBox.SuspendLayout();
             this.VelocityPlotGroupBox.SuspendLayout();
             this.AccelerationPlotGroupBox.SuspendLayout();
+            this.GraphsGroupBox.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.chart1)).BeginInit();
             this.SuspendLayout();
             // 
             // SendReceiveTimer
             // 
             this.SendReceiveTimer.Enabled = true;
+            this.SendReceiveTimer.Interval = 10;
             this.SendReceiveTimer.Tick += new System.EventHandler(this.SendReceiveUpdate);
             // 
             // ComPortSelectionBox
@@ -163,9 +168,9 @@
             // 
             this.StatusStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.MessageLogStatusStrip});
-            this.StatusStrip.Location = new System.Drawing.Point(0, 574);
+            this.StatusStrip.Location = new System.Drawing.Point(0, 473);
             this.StatusStrip.Name = "StatusStrip";
-            this.StatusStrip.Size = new System.Drawing.Size(854, 22);
+            this.StatusStrip.Size = new System.Drawing.Size(996, 22);
             this.StatusStrip.TabIndex = 1;
             // 
             // MessageLogStatusStrip
@@ -192,21 +197,6 @@
             this.DirectionSelectionBox.Size = new System.Drawing.Size(202, 21);
             this.DirectionSelectionBox.TabIndex = 4;
             this.DirectionSelectionBox.SelectedIndexChanged += new System.EventHandler(this.OnDirectionSelectionChanged);
-            // 
-            // PositionGraph
-            // 
-            this.PositionGraph.IsShowCursorValues = true;
-            this.PositionGraph.Location = new System.Drawing.Point(9, 37);
-            this.PositionGraph.Name = "PositionGraph";
-            this.PositionGraph.ScrollGrace = 0D;
-            this.PositionGraph.ScrollMaxX = 0D;
-            this.PositionGraph.ScrollMaxY = 0D;
-            this.PositionGraph.ScrollMaxY2 = 0D;
-            this.PositionGraph.ScrollMinX = 0D;
-            this.PositionGraph.ScrollMinY = 0D;
-            this.PositionGraph.ScrollMinY2 = 0D;
-            this.PositionGraph.Size = new System.Drawing.Size(405, 97);
-            this.PositionGraph.TabIndex = 5;
             // 
             // ComPortLabel
             // 
@@ -243,7 +233,7 @@
             this.ConfigurationGroupBox.Controls.Add(this.ModeSelectionLabel);
             this.ConfigurationGroupBox.Controls.Add(this.ModeSelectionBox);
             this.ConfigurationGroupBox.Controls.Add(this.DirectionSelectionBox);
-            this.ConfigurationGroupBox.Location = new System.Drawing.Point(12, 22);
+            this.ConfigurationGroupBox.Location = new System.Drawing.Point(12, 47);
             this.ConfigurationGroupBox.Name = "ConfigurationGroupBox";
             this.ConfigurationGroupBox.Size = new System.Drawing.Size(273, 100);
             this.ConfigurationGroupBox.TabIndex = 9;
@@ -255,9 +245,10 @@
             this.OutputsGroupBox.Controls.Add(this.RawControlGroupBox);
             this.OutputsGroupBox.Controls.Add(this.PositionControlGroupBox);
             this.OutputsGroupBox.Controls.Add(this.SpeedControlGroupBox);
-            this.OutputsGroupBox.Location = new System.Drawing.Point(12, 137);
+            this.OutputsGroupBox.Controls.Add(this.DeadBandTestingGroupBox);
+            this.OutputsGroupBox.Location = new System.Drawing.Point(12, 182);
             this.OutputsGroupBox.Name = "OutputsGroupBox";
-            this.OutputsGroupBox.Size = new System.Drawing.Size(273, 432);
+            this.OutputsGroupBox.Size = new System.Drawing.Size(538, 287);
             this.OutputsGroupBox.TabIndex = 10;
             this.OutputsGroupBox.TabStop = false;
             this.OutputsGroupBox.Text = "Outputs";
@@ -368,31 +359,31 @@
             // 
             this.RawBinaryChart.BackColor = System.Drawing.SystemColors.Control;
             this.RawBinaryChart.BorderlineColor = System.Drawing.SystemColors.Control;
-            chartArea9.AxisX.Enabled = System.Windows.Forms.DataVisualization.Charting.AxisEnabled.False;
-            chartArea9.AxisX.MajorGrid.Enabled = false;
-            chartArea9.AxisX2.Enabled = System.Windows.Forms.DataVisualization.Charting.AxisEnabled.False;
-            chartArea9.AxisX2.MajorGrid.Enabled = false;
-            chartArea9.AxisY.Enabled = System.Windows.Forms.DataVisualization.Charting.AxisEnabled.False;
-            chartArea9.AxisY.MajorGrid.Enabled = false;
-            chartArea9.AxisY.Maximum = 255D;
-            chartArea9.AxisY.Minimum = 5D;
-            chartArea9.AxisY2.Enabled = System.Windows.Forms.DataVisualization.Charting.AxisEnabled.False;
-            chartArea9.AxisY2.MajorGrid.Enabled = false;
-            chartArea9.BackColor = System.Drawing.SystemColors.Control;
-            chartArea9.Name = "ChartArea1";
-            chartArea9.Position.Auto = false;
-            chartArea9.Position.Height = 100F;
-            chartArea9.Position.Width = 100F;
-            this.RawBinaryChart.ChartAreas.Add(chartArea9);
+            chartArea1.AxisX.Enabled = System.Windows.Forms.DataVisualization.Charting.AxisEnabled.False;
+            chartArea1.AxisX.MajorGrid.Enabled = false;
+            chartArea1.AxisX2.Enabled = System.Windows.Forms.DataVisualization.Charting.AxisEnabled.False;
+            chartArea1.AxisX2.MajorGrid.Enabled = false;
+            chartArea1.AxisY.Enabled = System.Windows.Forms.DataVisualization.Charting.AxisEnabled.False;
+            chartArea1.AxisY.MajorGrid.Enabled = false;
+            chartArea1.AxisY.Maximum = 255D;
+            chartArea1.AxisY.Minimum = 5D;
+            chartArea1.AxisY2.Enabled = System.Windows.Forms.DataVisualization.Charting.AxisEnabled.False;
+            chartArea1.AxisY2.MajorGrid.Enabled = false;
+            chartArea1.BackColor = System.Drawing.SystemColors.Control;
+            chartArea1.Name = "ChartArea1";
+            chartArea1.Position.Auto = false;
+            chartArea1.Position.Height = 100F;
+            chartArea1.Position.Width = 100F;
+            this.RawBinaryChart.ChartAreas.Add(chartArea1);
             this.RawBinaryChart.Location = new System.Drawing.Point(6, 95);
             this.RawBinaryChart.Margin = new System.Windows.Forms.Padding(0);
             this.RawBinaryChart.Name = "RawBinaryChart";
-            series9.BorderDashStyle = System.Windows.Forms.DataVisualization.Charting.ChartDashStyle.NotSet;
-            series9.ChartArea = "ChartArea1";
-            series9.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Bar;
-            series9.Name = "Series1";
-            series9.Points.Add(dataPoint7);
-            this.RawBinaryChart.Series.Add(series9);
+            series1.BorderDashStyle = System.Windows.Forms.DataVisualization.Charting.ChartDashStyle.NotSet;
+            series1.ChartArea = "ChartArea1";
+            series1.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Bar;
+            series1.Name = "Series1";
+            series1.Points.Add(dataPoint1);
+            this.RawBinaryChart.Series.Add(series1);
             this.RawBinaryChart.Size = new System.Drawing.Size(246, 20);
             this.RawBinaryChart.TabIndex = 15;
             this.RawBinaryChart.Text = "chart1";
@@ -411,7 +402,7 @@
             this.PositionControlGroupBox.Controls.Add(this.PLabel);
             this.PositionControlGroupBox.Controls.Add(this.PositionPUpDown);
             this.PositionControlGroupBox.Enabled = false;
-            this.PositionControlGroupBox.Location = new System.Drawing.Point(9, 291);
+            this.PositionControlGroupBox.Location = new System.Drawing.Point(273, 146);
             this.PositionControlGroupBox.Name = "PositionControlGroupBox";
             this.PositionControlGroupBox.Size = new System.Drawing.Size(258, 134);
             this.PositionControlGroupBox.TabIndex = 11;
@@ -551,9 +542,9 @@
             this.SpeedControlGroupBox.Controls.Add(this.VoltageControlVoltageUpDown);
             this.SpeedControlGroupBox.Controls.Add(this.DeadBandCompensationCheckBox);
             this.SpeedControlGroupBox.Enabled = false;
-            this.SpeedControlGroupBox.Location = new System.Drawing.Point(9, 164);
+            this.SpeedControlGroupBox.Location = new System.Drawing.Point(9, 146);
             this.SpeedControlGroupBox.Name = "SpeedControlGroupBox";
-            this.SpeedControlGroupBox.Size = new System.Drawing.Size(258, 103);
+            this.SpeedControlGroupBox.Size = new System.Drawing.Size(258, 134);
             this.SpeedControlGroupBox.TabIndex = 11;
             this.SpeedControlGroupBox.TabStop = false;
             this.SpeedControlGroupBox.Text = "Speed/Voltage Control";
@@ -561,27 +552,27 @@
             // VoltageControlNegativeChart
             // 
             this.VoltageControlNegativeChart.BackColor = System.Drawing.SystemColors.Control;
-            chartArea10.AxisX.Enabled = System.Windows.Forms.DataVisualization.Charting.AxisEnabled.False;
-            chartArea10.AxisX2.Enabled = System.Windows.Forms.DataVisualization.Charting.AxisEnabled.False;
-            chartArea10.AxisY.Enabled = System.Windows.Forms.DataVisualization.Charting.AxisEnabled.False;
-            chartArea10.AxisY.IsReversed = true;
-            chartArea10.AxisY.Maximum = 16D;
-            chartArea10.AxisY.Minimum = 0D;
-            chartArea10.AxisY2.Enabled = System.Windows.Forms.DataVisualization.Charting.AxisEnabled.False;
-            chartArea10.BackColor = System.Drawing.SystemColors.Control;
-            chartArea10.Name = "ChartArea1";
-            chartArea10.Position.Auto = false;
-            chartArea10.Position.Height = 100F;
-            chartArea10.Position.Width = 100F;
-            this.VoltageControlNegativeChart.ChartAreas.Add(chartArea10);
+            chartArea2.AxisX.Enabled = System.Windows.Forms.DataVisualization.Charting.AxisEnabled.False;
+            chartArea2.AxisX2.Enabled = System.Windows.Forms.DataVisualization.Charting.AxisEnabled.False;
+            chartArea2.AxisY.Enabled = System.Windows.Forms.DataVisualization.Charting.AxisEnabled.False;
+            chartArea2.AxisY.IsReversed = true;
+            chartArea2.AxisY.Maximum = 16D;
+            chartArea2.AxisY.Minimum = 0D;
+            chartArea2.AxisY2.Enabled = System.Windows.Forms.DataVisualization.Charting.AxisEnabled.False;
+            chartArea2.BackColor = System.Drawing.SystemColors.Control;
+            chartArea2.Name = "ChartArea1";
+            chartArea2.Position.Auto = false;
+            chartArea2.Position.Height = 100F;
+            chartArea2.Position.Width = 100F;
+            this.VoltageControlNegativeChart.ChartAreas.Add(chartArea2);
             this.VoltageControlNegativeChart.Location = new System.Drawing.Point(6, 78);
             this.VoltageControlNegativeChart.Name = "VoltageControlNegativeChart";
-            series10.ChartArea = "ChartArea1";
-            series10.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Bar;
-            series10.Name = "Series1";
-            dataPoint8.Color = System.Drawing.Color.Red;
-            series10.Points.Add(dataPoint8);
-            this.VoltageControlNegativeChart.Series.Add(series10);
+            series2.ChartArea = "ChartArea1";
+            series2.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Bar;
+            series2.Name = "Series1";
+            dataPoint2.Color = System.Drawing.Color.Red;
+            series2.Points.Add(dataPoint2);
+            this.VoltageControlNegativeChart.Series.Add(series2);
             this.VoltageControlNegativeChart.Size = new System.Drawing.Size(123, 20);
             this.VoltageControlNegativeChart.TabIndex = 16;
             this.VoltageControlNegativeChart.Text = "chart2";
@@ -589,25 +580,25 @@
             // VoltageControlPositiveChart
             // 
             this.VoltageControlPositiveChart.BackColor = System.Drawing.SystemColors.Control;
-            chartArea11.AxisX.Enabled = System.Windows.Forms.DataVisualization.Charting.AxisEnabled.False;
-            chartArea11.AxisX2.Enabled = System.Windows.Forms.DataVisualization.Charting.AxisEnabled.False;
-            chartArea11.AxisY.Enabled = System.Windows.Forms.DataVisualization.Charting.AxisEnabled.False;
-            chartArea11.AxisY.Maximum = 16D;
-            chartArea11.AxisY.Minimum = 0D;
-            chartArea11.AxisY2.Enabled = System.Windows.Forms.DataVisualization.Charting.AxisEnabled.False;
-            chartArea11.BackColor = System.Drawing.SystemColors.Control;
-            chartArea11.Name = "ChartArea1";
-            chartArea11.Position.Auto = false;
-            chartArea11.Position.Height = 100F;
-            chartArea11.Position.Width = 100F;
-            this.VoltageControlPositiveChart.ChartAreas.Add(chartArea11);
+            chartArea3.AxisX.Enabled = System.Windows.Forms.DataVisualization.Charting.AxisEnabled.False;
+            chartArea3.AxisX2.Enabled = System.Windows.Forms.DataVisualization.Charting.AxisEnabled.False;
+            chartArea3.AxisY.Enabled = System.Windows.Forms.DataVisualization.Charting.AxisEnabled.False;
+            chartArea3.AxisY.Maximum = 16D;
+            chartArea3.AxisY.Minimum = 0D;
+            chartArea3.AxisY2.Enabled = System.Windows.Forms.DataVisualization.Charting.AxisEnabled.False;
+            chartArea3.BackColor = System.Drawing.SystemColors.Control;
+            chartArea3.Name = "ChartArea1";
+            chartArea3.Position.Auto = false;
+            chartArea3.Position.Height = 100F;
+            chartArea3.Position.Width = 100F;
+            this.VoltageControlPositiveChart.ChartAreas.Add(chartArea3);
             this.VoltageControlPositiveChart.Location = new System.Drawing.Point(129, 78);
             this.VoltageControlPositiveChart.Name = "VoltageControlPositiveChart";
-            series11.ChartArea = "ChartArea1";
-            series11.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Bar;
-            series11.Name = "Series1";
-            series11.Points.Add(dataPoint9);
-            this.VoltageControlPositiveChart.Series.Add(series11);
+            series3.ChartArea = "ChartArea1";
+            series3.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Bar;
+            series3.Name = "Series1";
+            series3.Points.Add(dataPoint3);
+            this.VoltageControlPositiveChart.Series.Add(series3);
             this.VoltageControlPositiveChart.Size = new System.Drawing.Size(123, 20);
             this.VoltageControlPositiveChart.TabIndex = 15;
             this.VoltageControlPositiveChart.Text = "chart1";
@@ -686,9 +677,9 @@
             this.DeadBandTestingGroupBox.Controls.Add(this.DeadBandTestingVoltageLabel);
             this.DeadBandTestingGroupBox.Controls.Add(this.DeadBandTestingStartButton);
             this.DeadBandTestingGroupBox.Enabled = false;
-            this.DeadBandTestingGroupBox.Location = new System.Drawing.Point(291, 12);
+            this.DeadBandTestingGroupBox.Location = new System.Drawing.Point(273, 19);
             this.DeadBandTestingGroupBox.Name = "DeadBandTestingGroupBox";
-            this.DeadBandTestingGroupBox.Size = new System.Drawing.Size(244, 119);
+            this.DeadBandTestingGroupBox.Size = new System.Drawing.Size(258, 121);
             this.DeadBandTestingGroupBox.TabIndex = 11;
             this.DeadBandTestingGroupBox.TabStop = false;
             this.DeadBandTestingGroupBox.Text = "Dead-Band Testing";
@@ -696,7 +687,7 @@
             // DeadBandTestingRangeLabel
             // 
             this.DeadBandTestingRangeLabel.AutoSize = true;
-            this.DeadBandTestingRangeLabel.Location = new System.Drawing.Point(53, 74);
+            this.DeadBandTestingRangeLabel.Location = new System.Drawing.Point(60, 74);
             this.DeadBandTestingRangeLabel.Name = "DeadBandTestingRangeLabel";
             this.DeadBandTestingRangeLabel.Size = new System.Drawing.Size(139, 13);
             this.DeadBandTestingRangeLabel.TabIndex = 19;
@@ -704,7 +695,7 @@
             // 
             // DeadBandUpperUpDown
             // 
-            this.DeadBandUpperUpDown.Location = new System.Drawing.Point(148, 90);
+            this.DeadBandUpperUpDown.Location = new System.Drawing.Point(162, 90);
             this.DeadBandUpperUpDown.Maximum = new decimal(new int[] {
             255,
             0,
@@ -718,7 +709,7 @@
             // DeadBandTestingToLabel
             // 
             this.DeadBandTestingToLabel.AutoSize = true;
-            this.DeadBandTestingToLabel.Location = new System.Drawing.Point(114, 92);
+            this.DeadBandTestingToLabel.Location = new System.Drawing.Point(121, 92);
             this.DeadBandTestingToLabel.Name = "DeadBandTestingToLabel";
             this.DeadBandTestingToLabel.Size = new System.Drawing.Size(16, 13);
             this.DeadBandTestingToLabel.TabIndex = 12;
@@ -748,7 +739,7 @@
             // 
             // DeadBandTestingPositionTextBox
             // 
-            this.DeadBandTestingPositionTextBox.Location = new System.Drawing.Point(164, 50);
+            this.DeadBandTestingPositionTextBox.Location = new System.Drawing.Point(178, 50);
             this.DeadBandTestingPositionTextBox.Name = "DeadBandTestingPositionTextBox";
             this.DeadBandTestingPositionTextBox.ReadOnly = true;
             this.DeadBandTestingPositionTextBox.Size = new System.Drawing.Size(74, 20);
@@ -757,7 +748,7 @@
             // DeadBandTestingPositionLabel
             // 
             this.DeadBandTestingPositionLabel.AutoSize = true;
-            this.DeadBandTestingPositionLabel.Location = new System.Drawing.Point(113, 53);
+            this.DeadBandTestingPositionLabel.Location = new System.Drawing.Point(129, 53);
             this.DeadBandTestingPositionLabel.Name = "DeadBandTestingPositionLabel";
             this.DeadBandTestingPositionLabel.Size = new System.Drawing.Size(44, 13);
             this.DeadBandTestingPositionLabel.TabIndex = 16;
@@ -765,7 +756,7 @@
             // 
             // DeadBandTestingVoltageTextBox
             // 
-            this.DeadBandTestingVoltageTextBox.Location = new System.Drawing.Point(164, 21);
+            this.DeadBandTestingVoltageTextBox.Location = new System.Drawing.Point(178, 21);
             this.DeadBandTestingVoltageTextBox.Name = "DeadBandTestingVoltageTextBox";
             this.DeadBandTestingVoltageTextBox.ReadOnly = true;
             this.DeadBandTestingVoltageTextBox.Size = new System.Drawing.Size(74, 20);
@@ -783,7 +774,7 @@
             // DeadBandTestingVoltageLabel
             // 
             this.DeadBandTestingVoltageLabel.AutoSize = true;
-            this.DeadBandTestingVoltageLabel.Location = new System.Drawing.Point(114, 24);
+            this.DeadBandTestingVoltageLabel.Location = new System.Drawing.Point(129, 24);
             this.DeadBandTestingVoltageLabel.Name = "DeadBandTestingVoltageLabel";
             this.DeadBandTestingVoltageLabel.Size = new System.Drawing.Size(43, 13);
             this.DeadBandTestingVoltageLabel.TabIndex = 13;
@@ -800,13 +791,13 @@
             // 
             // PositionPlotGroupBox
             // 
+            this.PositionPlotGroupBox.Controls.Add(this.chart1);
             this.PositionPlotGroupBox.Controls.Add(this.PositionPlotCountsRadioButton);
             this.PositionPlotGroupBox.Controls.Add(this.PositionPlotRadRadioButton);
             this.PositionPlotGroupBox.Controls.Add(this.PositionPlotDegRadioButton);
             this.PositionPlotGroupBox.Controls.Add(this.PositionPlotCurrentTextBox);
-            this.PositionPlotGroupBox.Controls.Add(this.PositionGraph);
             this.PositionPlotGroupBox.Controls.Add(this.PositionPlotCurrentLabel);
-            this.PositionPlotGroupBox.Location = new System.Drawing.Point(291, 137);
+            this.PositionPlotGroupBox.Location = new System.Drawing.Point(6, 19);
             this.PositionPlotGroupBox.Name = "PositionPlotGroupBox";
             this.PositionPlotGroupBox.Size = new System.Drawing.Size(420, 140);
             this.PositionPlotGroupBox.TabIndex = 12;
@@ -871,7 +862,7 @@
             this.VelocityPlotGroupBox.Controls.Add(this.VelocityPlotDegRadioButton);
             this.VelocityPlotGroupBox.Controls.Add(this.VelocityPlotCurrentTextBox);
             this.VelocityPlotGroupBox.Controls.Add(this.VelocityPlotCurrentLabel);
-            this.VelocityPlotGroupBox.Location = new System.Drawing.Point(291, 283);
+            this.VelocityPlotGroupBox.Location = new System.Drawing.Point(6, 165);
             this.VelocityPlotGroupBox.Name = "VelocityPlotGroupBox";
             this.VelocityPlotGroupBox.Size = new System.Drawing.Size(420, 140);
             this.VelocityPlotGroupBox.TabIndex = 13;
@@ -950,7 +941,7 @@
             this.AccelerationPlotGroupBox.Controls.Add(this.AccelerationPlotDegRadioButton);
             this.AccelerationPlotGroupBox.Controls.Add(this.AccelerationPlotCurrentTextBox);
             this.AccelerationPlotGroupBox.Controls.Add(this.AccelerationPlotCurrentLabel);
-            this.AccelerationPlotGroupBox.Location = new System.Drawing.Point(291, 429);
+            this.AccelerationPlotGroupBox.Location = new System.Drawing.Point(6, 311);
             this.AccelerationPlotGroupBox.Name = "AccelerationPlotGroupBox";
             this.AccelerationPlotGroupBox.Size = new System.Drawing.Size(420, 140);
             this.AccelerationPlotGroupBox.TabIndex = 14;
@@ -1021,27 +1012,51 @@
             this.AccelerationPlotCurrentLabel.TabIndex = 15;
             this.AccelerationPlotCurrentLabel.Text = "Current Accel.";
             // 
+            // GraphsGroupBox
+            // 
+            this.GraphsGroupBox.Controls.Add(this.PositionPlotGroupBox);
+            this.GraphsGroupBox.Controls.Add(this.AccelerationPlotGroupBox);
+            this.GraphsGroupBox.Controls.Add(this.VelocityPlotGroupBox);
+            this.GraphsGroupBox.Location = new System.Drawing.Point(556, 12);
+            this.GraphsGroupBox.Name = "GraphsGroupBox";
+            this.GraphsGroupBox.Size = new System.Drawing.Size(433, 457);
+            this.GraphsGroupBox.TabIndex = 15;
+            this.GraphsGroupBox.TabStop = false;
+            this.GraphsGroupBox.Text = "Graphs";
+            // 
+            // textBox1
+            // 
+            this.textBox1.Location = new System.Drawing.Point(296, 12);
+            this.textBox1.Name = "textBox1";
+            this.textBox1.Size = new System.Drawing.Size(100, 20);
+            this.textBox1.TabIndex = 16;
+            // 
+            // textBox2
+            // 
+            this.textBox2.Location = new System.Drawing.Point(402, 12);
+            this.textBox2.Name = "textBox2";
+            this.textBox2.Size = new System.Drawing.Size(100, 20);
+            this.textBox2.TabIndex = 17;
+            // 
+            // textBox3
+            // 
+            this.textBox3.Location = new System.Drawing.Point(296, 38);
+            this.textBox3.Name = "textBox3";
+            this.textBox3.Size = new System.Drawing.Size(206, 20);
+            this.textBox3.TabIndex = 18;
+            // 
             // chart1
             // 
-            chartArea12.AxisX.Enabled = System.Windows.Forms.DataVisualization.Charting.AxisEnabled.False;
-            chartArea12.AxisX2.Enabled = System.Windows.Forms.DataVisualization.Charting.AxisEnabled.False;
-            chartArea12.AxisY.MajorGrid.Enabled = false;
-            chartArea12.AxisY.MajorTickMark.Enabled = false;
-            chartArea12.AxisY2.Enabled = System.Windows.Forms.DataVisualization.Charting.AxisEnabled.False;
-            chartArea12.Name = "ChartArea1";
-            chartArea12.Position.Auto = false;
-            chartArea12.Position.Height = 94F;
-            chartArea12.Position.Width = 100F;
-            chartArea12.Position.Y = 3F;
-            this.chart1.ChartAreas.Add(chartArea12);
-            this.chart1.Location = new System.Drawing.Point(542, 16);
+            chartArea4.Name = "ChartArea1";
+            this.chart1.ChartAreas.Add(chartArea4);
+            this.chart1.Location = new System.Drawing.Point(9, 35);
             this.chart1.Name = "chart1";
-            series12.ChartArea = "ChartArea1";
-            series12.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Spline;
-            series12.Name = "Series1";
-            this.chart1.Series.Add(series12);
-            this.chart1.Size = new System.Drawing.Size(300, 97);
-            this.chart1.TabIndex = 15;
+            series4.ChartArea = "ChartArea1";
+            series4.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Spline;
+            series4.Name = "Series1";
+            this.chart1.Series.Add(series4);
+            this.chart1.Size = new System.Drawing.Size(405, 99);
+            this.chart1.TabIndex = 16;
             this.chart1.Text = "chart1";
             // 
             // MainInterface
@@ -1049,12 +1064,11 @@
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.AutoValidate = System.Windows.Forms.AutoValidate.EnableAllowFocusChange;
-            this.ClientSize = new System.Drawing.Size(854, 596);
-            this.Controls.Add(this.chart1);
-            this.Controls.Add(this.AccelerationPlotGroupBox);
-            this.Controls.Add(this.VelocityPlotGroupBox);
-            this.Controls.Add(this.PositionPlotGroupBox);
-            this.Controls.Add(this.DeadBandTestingGroupBox);
+            this.ClientSize = new System.Drawing.Size(996, 495);
+            this.Controls.Add(this.textBox3);
+            this.Controls.Add(this.textBox2);
+            this.Controls.Add(this.textBox1);
+            this.Controls.Add(this.GraphsGroupBox);
             this.Controls.Add(this.OutputsGroupBox);
             this.Controls.Add(this.ConfigurationGroupBox);
             this.Controls.Add(this.StatusStrip);
@@ -1093,6 +1107,7 @@
             this.VelocityPlotGroupBox.PerformLayout();
             this.AccelerationPlotGroupBox.ResumeLayout(false);
             this.AccelerationPlotGroupBox.PerformLayout();
+            this.GraphsGroupBox.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.chart1)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
@@ -1108,7 +1123,6 @@
         private System.Windows.Forms.ToolStripStatusLabel MessageLogStatusStrip;
         private System.Windows.Forms.ComboBox ModeSelectionBox;
         private System.Windows.Forms.ComboBox DirectionSelectionBox;
-        private ZedGraph.ZedGraphControl PositionGraph;
         private System.Windows.Forms.Label ComPortLabel;
         private System.Windows.Forms.Label ModeSelectionLabel;
         private System.Windows.Forms.Label DirectionSelectionLabel;
@@ -1179,6 +1193,10 @@
         private System.Windows.Forms.Label label2;
         private System.Windows.Forms.Label label1;
         private System.Windows.Forms.TextBox RawVoltageTextBox;
+        private System.Windows.Forms.GroupBox GraphsGroupBox;
+        private System.Windows.Forms.TextBox textBox1;
+        private System.Windows.Forms.TextBox textBox2;
+        private System.Windows.Forms.TextBox textBox3;
         private System.Windows.Forms.DataVisualization.Charting.Chart chart1;
     }
 }
