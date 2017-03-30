@@ -54,13 +54,13 @@ void loop() {
 		// Request for Decoder Port A data received, read the port and send data
 		if (portByte == DecoderHighPort) {
 			//SendOutgoingData(DecoderHighPort, decoderHigh);
-      SendOutgoingData(DecoderHighPort, (byte)(tempData >> 8));
+			SendOutgoingData(DecoderHighPort, (byte)(tempData >> 8));
 		}
 
 		// Request for Decoder Port B data received, read the port and send data
 		if (portByte == DecoderLowPort) {
 			//SendOutgoingData(DecoderLowPort, decoderLow);
-      SendOutgoingData(DecoderLowPort, (byte)(tempData));
+			SendOutgoingData(DecoderLowPort, (byte)(tempData));
 		}
 
 		// DAC data received, write it to the DAC port

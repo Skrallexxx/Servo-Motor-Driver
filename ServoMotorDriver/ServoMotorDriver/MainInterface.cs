@@ -3,6 +3,8 @@ using System.Windows.Forms;
 using System.IO.Ports;
 using System.Diagnostics;
 using ServoMotorDriver;
+using System.Collections.Generic;
+using System.Windows.Forms.DataVisualization.Charting;
 
 namespace ServoMotorDriver {
     public partial class MainInterface : Form {
@@ -23,11 +25,17 @@ namespace ServoMotorDriver {
 
         // Decoder Position, Velocity and Acceleration Variables
         Int16 currentPos = 0;
-        Int16 totalPos = 0;
-        Int16 startTime = 0;
-        Int16 currentTime = 0;
+        Int32 totalPos = 0;
+        DataPointCollection positionPoints;
+        DataPointCollection velocityPoints;
+        DataPointCollection accelerationPoints;
+        int maxPositionPoints = 100, currentPositionPointsPos = -1;
+        int maxVelocityPoints = 100, currentVelocityPointsPos = -1;
+        int maxAccelerationPoints = 100, currentAccelerationPointsPos = -1;
 
-        System.DateTime time = new System.DateTime();
+        // Stopwatches for determinining elapsed times
+        Stopwatch uptimeSW = new Stopwatch();
+        Random rand = new Random();
 
         // Current selected mode and direction
         ControlEnums.MODE currentMode = ControlEnums.MODE.FREESPIN;
@@ -43,7 +51,7 @@ namespace ServoMotorDriver {
         public MainInterface() {
             Debug.WriteLine("Servo Motor Driver Starting Up...");
             InitializeComponent();
-            startTime = (Int16)time.Second;
+            uptimeSW.Start();
 
             // Add the MODE enums to the dropdown mode selection box
             foreach (ControlEnums.MODE mode in Enum.GetValues(typeof(ControlEnums.MODE))) {
@@ -79,6 +87,11 @@ namespace ServoMotorDriver {
             // Set Dead-Band Bounds
             DeadBandLowerUpDown.Value = deadBandMin;
             DeadBandUpperUpDown.Value = deadBandMax;
+
+            // Add chart stuff
+            positionPoints = chart1.Series[0].Points;
+            velocityPoints = chart2.Series[0].Points;
+            accelerationPoints = chart3.Series[0].Points;
         }
 
         #endregion
@@ -91,9 +104,122 @@ namespace ServoMotorDriver {
                 TryOpenSerialCommunication(ComPortSelectionBox.SelectedItem.ToString());
 
             // Check for any incoming data packets
-            ReadIncomingData();
+            //ReadIncomingData();
+            currentPos += (Int16)rand.Next(-20, 50);
+            if (currentPos >= 2000 || currentPos <= -2000)
+                currentPos = 0;
+            decoderHigh = (byte)(currentPos >> 8);
+            decoderLow = (byte)(currentPos);
 
+            textBox1.Text = decoderHigh.ToString();
+            textBox2.Text = decoderLow.ToString();
             textBox3.Text = ((Int16)((decoderHigh << 8) | decoderLow)).ToString();
+
+            AddPositionPointToChart((double)uptimeSW.ElapsedMilliseconds, Double.Parse(textBox3.Text));
+
+            if(positionPoints.Count > 4) {
+                List<DataPoint> pastPositionPoints = GetPastPositionPoints(5);
+                double overallPositionChange = 0;
+
+                for(int i = 0; i < pastPositionPoints.Count - 2; i++) {
+                    overallPositionChange += pastPositionPoints[i + 1].YValues[0] - pastPositionPoints[i].YValues[0];
+                }
+
+                double velocity = overallPositionChange / (pastPositionPoints[pastPositionPoints.Count - 1].XValue - pastPositionPoints[0].XValue);
+                AddVelocityPointToChart((double)uptimeSW.ElapsedMilliseconds, velocity);
+            }
+
+            if(velocityPoints.Count > 4) {
+                List<DataPoint> pastVelocityPoints = GetPastVelocityPoints(5);
+                double overallVelocityChange = 0;
+
+                for(int i = 0; i < pastVelocityPoints.Count - 2; i++) {
+                    overallVelocityChange += pastVelocityPoints[i + 1].YValues[0] - pastVelocityPoints[i].YValues[0];
+                }
+                double acceleration = overallVelocityChange / (pastVelocityPoints[pastVelocityPoints.Count - 1].XValue - pastVelocityPoints[0].XValue);
+                AddAccelerationPointToChart((double)uptimeSW.ElapsedMilliseconds, acceleration);
+            }
+
+            SetChartXAxesMaximums();
+            chart1.Update();
+            chart2.Update();
+            chart3.Update();
+        }
+
+        void SetChartXAxesMaximums() {
+            if(positionPoints.Count > 0) {
+                chart1.ChartAreas[0].Axes[0].Minimum = positionPoints.FindMinByValue("X").XValue;
+                chart1.ChartAreas[0].Axes[0].Maximum = positionPoints.FindMaxByValue("X").XValue;
+            }
+            if (velocityPoints.Count > 0) {
+                chart2.ChartAreas[0].Axes[0].Minimum = velocityPoints.FindMinByValue("X").XValue;
+                chart2.ChartAreas[0].Axes[0].Maximum = velocityPoints.FindMaxByValue("X").XValue;
+            }
+            if(accelerationPoints.Count > 0) {
+                chart3.ChartAreas[0].Axes[0].Minimum = accelerationPoints.FindMinByValue("X").XValue;
+                chart3.ChartAreas[0].Axes[0].Maximum = accelerationPoints.FindMaxByValue("X").XValue;
+            }
+        }
+
+        void AddPositionPointToChart(double x, double y) {
+            currentPositionPointsPos++;
+            if (currentPositionPointsPos >= maxPositionPoints)
+                currentPositionPointsPos = 0;
+
+            if (positionPoints.Count >= maxPositionPoints) 
+                positionPoints[currentPositionPointsPos].SetValueXY(x, y);
+            else
+                positionPoints.AddXY(x, y);
+        }
+
+        int GetPositionPointsPreviousPos(int offset) {
+            if (currentPositionPointsPos - offset < 0)
+                return maxPositionPoints + (currentPositionPointsPos - offset);
+            else return currentPositionPointsPos - offset;
+        }
+
+        List<DataPoint> GetPastPositionPoints(int num) {
+            List<DataPoint> prev = new List<DataPoint>();
+            for (int i = 0; i < num; i++) {
+                prev.Add(positionPoints[GetPositionPointsPreviousPos(i)]);
+            }
+            return prev;
+        }
+
+        void AddVelocityPointToChart(double x, double y) {
+            currentVelocityPointsPos++;
+            if (currentVelocityPointsPos >= maxVelocityPoints)
+                currentVelocityPointsPos = 0;
+
+            if (velocityPoints.Count >= maxVelocityPoints)
+                velocityPoints[currentVelocityPointsPos].SetValueXY(x, y);
+            else
+                velocityPoints.AddXY(x, y);
+        }
+
+        int GetVelocityPointsPreviousPos(int offset) {
+            if (currentVelocityPointsPos - offset < 0)
+                return maxVelocityPoints + (currentVelocityPointsPos - offset);
+            else return currentVelocityPointsPos - offset;
+        }
+
+        List<DataPoint> GetPastVelocityPoints(int num) {
+            List<DataPoint> prev = new List<DataPoint>();
+            for(int i = 0; i < num; i++) {
+                prev.Add(velocityPoints[GetVelocityPointsPreviousPos(i)]);
+            }
+            return prev;
+        }
+
+        void AddAccelerationPointToChart(double x, double y) {
+            currentAccelerationPointsPos++;
+            if (currentAccelerationPointsPos >= maxAccelerationPoints)
+                currentAccelerationPointsPos = 0;
+
+            if (accelerationPoints.Count >= maxAccelerationPoints)
+                accelerationPoints[currentAccelerationPointsPos].SetValueXY(x, y);
+            else
+                accelerationPoints.AddXY(x, y);
         }
 
         #endregion

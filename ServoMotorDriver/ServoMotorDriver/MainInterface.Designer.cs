@@ -40,6 +40,10 @@
             System.Windows.Forms.DataVisualization.Charting.DataPoint dataPoint3 = new System.Windows.Forms.DataVisualization.Charting.DataPoint(0D, 0D);
             System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea4 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
             System.Windows.Forms.DataVisualization.Charting.Series series4 = new System.Windows.Forms.DataVisualization.Charting.Series();
+            System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea5 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
+            System.Windows.Forms.DataVisualization.Charting.Series series5 = new System.Windows.Forms.DataVisualization.Charting.Series();
+            System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea6 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
+            System.Windows.Forms.DataVisualization.Charting.Series series6 = new System.Windows.Forms.DataVisualization.Charting.Series();
             this.SerialComPort = new System.IO.Ports.SerialPort(this.components);
             this.SendReceiveTimer = new System.Windows.Forms.Timer(this.components);
             this.ComPortSelectionBox = new System.Windows.Forms.ComboBox();
@@ -98,20 +102,19 @@
             this.DeadBandTestingVoltageLabel = new System.Windows.Forms.Label();
             this.DeadBandTestingStartButton = new System.Windows.Forms.Button();
             this.PositionPlotGroupBox = new System.Windows.Forms.GroupBox();
+            this.chart1 = new System.Windows.Forms.DataVisualization.Charting.Chart();
             this.PositionPlotCountsRadioButton = new System.Windows.Forms.RadioButton();
             this.PositionPlotRadRadioButton = new System.Windows.Forms.RadioButton();
             this.PositionPlotDegRadioButton = new System.Windows.Forms.RadioButton();
             this.PositionPlotCurrentTextBox = new System.Windows.Forms.TextBox();
             this.PositionPlotCurrentLabel = new System.Windows.Forms.Label();
             this.VelocityPlotGroupBox = new System.Windows.Forms.GroupBox();
-            this.VelocityGraph = new ZedGraph.ZedGraphControl();
             this.VelocityPlotCountsRadioButton = new System.Windows.Forms.RadioButton();
             this.VelocityPlotRadRadioButton = new System.Windows.Forms.RadioButton();
             this.VelocityPlotDegRadioButton = new System.Windows.Forms.RadioButton();
             this.VelocityPlotCurrentTextBox = new System.Windows.Forms.TextBox();
             this.VelocityPlotCurrentLabel = new System.Windows.Forms.Label();
             this.AccelerationPlotGroupBox = new System.Windows.Forms.GroupBox();
-            this.AccelerationGraph = new ZedGraph.ZedGraphControl();
             this.AccelerationPlotCountsRadioButton = new System.Windows.Forms.RadioButton();
             this.AccelerationPlotRadRadioButton = new System.Windows.Forms.RadioButton();
             this.AccelerationPlotDegRadioButton = new System.Windows.Forms.RadioButton();
@@ -121,7 +124,8 @@
             this.textBox1 = new System.Windows.Forms.TextBox();
             this.textBox2 = new System.Windows.Forms.TextBox();
             this.textBox3 = new System.Windows.Forms.TextBox();
-            this.chart1 = new System.Windows.Forms.DataVisualization.Charting.Chart();
+            this.chart2 = new System.Windows.Forms.DataVisualization.Charting.Chart();
+            this.chart3 = new System.Windows.Forms.DataVisualization.Charting.Chart();
             this.StatusStrip.SuspendLayout();
             this.ConfigurationGroupBox.SuspendLayout();
             this.OutputsGroupBox.SuspendLayout();
@@ -142,16 +146,18 @@
             ((System.ComponentModel.ISupportInitialize)(this.DeadBandUpperUpDown)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.DeadBandLowerUpDown)).BeginInit();
             this.PositionPlotGroupBox.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.chart1)).BeginInit();
             this.VelocityPlotGroupBox.SuspendLayout();
             this.AccelerationPlotGroupBox.SuspendLayout();
             this.GraphsGroupBox.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.chart1)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.chart2)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.chart3)).BeginInit();
             this.SuspendLayout();
             // 
             // SendReceiveTimer
             // 
             this.SendReceiveTimer.Enabled = true;
-            this.SendReceiveTimer.Interval = 10;
+            this.SendReceiveTimer.Interval = 15;
             this.SendReceiveTimer.Tick += new System.EventHandler(this.SendReceiveUpdate);
             // 
             // ComPortSelectionBox
@@ -804,6 +810,28 @@
             this.PositionPlotGroupBox.TabStop = false;
             this.PositionPlotGroupBox.Text = "Position";
             // 
+            // chart1
+            // 
+            chartArea4.AxisX.MajorGrid.Enabled = false;
+            chartArea4.AxisY.MajorGrid.Interval = 2000D;
+            chartArea4.AxisY.MajorGrid.IntervalOffset = 1D;
+            chartArea4.AxisY.Maximum = 2000D;
+            chartArea4.AxisY.Minimum = -2000D;
+            chartArea4.Name = "ChartArea1";
+            chartArea4.Position.Auto = false;
+            chartArea4.Position.Height = 100F;
+            chartArea4.Position.Width = 100F;
+            this.chart1.ChartAreas.Add(chartArea4);
+            this.chart1.Location = new System.Drawing.Point(9, 35);
+            this.chart1.Name = "chart1";
+            series4.ChartArea = "ChartArea1";
+            series4.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Spline;
+            series4.Name = "Series1";
+            this.chart1.Series.Add(series4);
+            this.chart1.Size = new System.Drawing.Size(405, 99);
+            this.chart1.TabIndex = 16;
+            this.chart1.Text = "chart1";
+            // 
             // PositionPlotCountsRadioButton
             // 
             this.PositionPlotCountsRadioButton.AutoSize = true;
@@ -856,7 +884,7 @@
             // 
             // VelocityPlotGroupBox
             // 
-            this.VelocityPlotGroupBox.Controls.Add(this.VelocityGraph);
+            this.VelocityPlotGroupBox.Controls.Add(this.chart2);
             this.VelocityPlotGroupBox.Controls.Add(this.VelocityPlotCountsRadioButton);
             this.VelocityPlotGroupBox.Controls.Add(this.VelocityPlotRadRadioButton);
             this.VelocityPlotGroupBox.Controls.Add(this.VelocityPlotDegRadioButton);
@@ -868,20 +896,6 @@
             this.VelocityPlotGroupBox.TabIndex = 13;
             this.VelocityPlotGroupBox.TabStop = false;
             this.VelocityPlotGroupBox.Text = "Velocity";
-            // 
-            // VelocityGraph
-            // 
-            this.VelocityGraph.Location = new System.Drawing.Point(9, 39);
-            this.VelocityGraph.Name = "VelocityGraph";
-            this.VelocityGraph.ScrollGrace = 0D;
-            this.VelocityGraph.ScrollMaxX = 0D;
-            this.VelocityGraph.ScrollMaxY = 0D;
-            this.VelocityGraph.ScrollMaxY2 = 0D;
-            this.VelocityGraph.ScrollMinX = 0D;
-            this.VelocityGraph.ScrollMinY = 0D;
-            this.VelocityGraph.ScrollMinY2 = 0D;
-            this.VelocityGraph.Size = new System.Drawing.Size(405, 95);
-            this.VelocityGraph.TabIndex = 0;
             // 
             // VelocityPlotCountsRadioButton
             // 
@@ -935,7 +949,7 @@
             // 
             // AccelerationPlotGroupBox
             // 
-            this.AccelerationPlotGroupBox.Controls.Add(this.AccelerationGraph);
+            this.AccelerationPlotGroupBox.Controls.Add(this.chart3);
             this.AccelerationPlotGroupBox.Controls.Add(this.AccelerationPlotCountsRadioButton);
             this.AccelerationPlotGroupBox.Controls.Add(this.AccelerationPlotRadRadioButton);
             this.AccelerationPlotGroupBox.Controls.Add(this.AccelerationPlotDegRadioButton);
@@ -947,20 +961,6 @@
             this.AccelerationPlotGroupBox.TabIndex = 14;
             this.AccelerationPlotGroupBox.TabStop = false;
             this.AccelerationPlotGroupBox.Text = "Acceleration";
-            // 
-            // AccelerationGraph
-            // 
-            this.AccelerationGraph.Location = new System.Drawing.Point(9, 39);
-            this.AccelerationGraph.Name = "AccelerationGraph";
-            this.AccelerationGraph.ScrollGrace = 0D;
-            this.AccelerationGraph.ScrollMaxX = 0D;
-            this.AccelerationGraph.ScrollMaxY = 0D;
-            this.AccelerationGraph.ScrollMaxY2 = 0D;
-            this.AccelerationGraph.ScrollMinX = 0D;
-            this.AccelerationGraph.ScrollMinY = 0D;
-            this.AccelerationGraph.ScrollMinY2 = 0D;
-            this.AccelerationGraph.Size = new System.Drawing.Size(405, 95);
-            this.AccelerationGraph.TabIndex = 20;
             // 
             // AccelerationPlotCountsRadioButton
             // 
@@ -1045,19 +1045,49 @@
             this.textBox3.Size = new System.Drawing.Size(206, 20);
             this.textBox3.TabIndex = 18;
             // 
-            // chart1
+            // chart2
             // 
-            chartArea4.Name = "ChartArea1";
-            this.chart1.ChartAreas.Add(chartArea4);
-            this.chart1.Location = new System.Drawing.Point(9, 35);
-            this.chart1.Name = "chart1";
-            series4.ChartArea = "ChartArea1";
-            series4.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Spline;
-            series4.Name = "Series1";
-            this.chart1.Series.Add(series4);
-            this.chart1.Size = new System.Drawing.Size(405, 99);
-            this.chart1.TabIndex = 16;
-            this.chart1.Text = "chart1";
+            chartArea5.AxisX.MajorGrid.Enabled = false;
+            chartArea5.AxisY.MajorGrid.Interval = 2000D;
+            chartArea5.AxisY.MajorGrid.IntervalOffset = 1D;
+            chartArea5.AxisY.Maximum = 1D;
+            chartArea5.AxisY.Minimum = -1D;
+            chartArea5.Name = "ChartArea1";
+            chartArea5.Position.Auto = false;
+            chartArea5.Position.Height = 100F;
+            chartArea5.Position.Width = 100F;
+            this.chart2.ChartAreas.Add(chartArea5);
+            this.chart2.Location = new System.Drawing.Point(9, 35);
+            this.chart2.Name = "chart2";
+            series5.ChartArea = "ChartArea1";
+            series5.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Spline;
+            series5.Name = "Series1";
+            this.chart2.Series.Add(series5);
+            this.chart2.Size = new System.Drawing.Size(405, 99);
+            this.chart2.TabIndex = 17;
+            this.chart2.Text = "chart2";
+            // 
+            // chart3
+            // 
+            chartArea6.AxisX.MajorGrid.Enabled = false;
+            chartArea6.AxisY.MajorGrid.Interval = 2000D;
+            chartArea6.AxisY.MajorGrid.IntervalOffset = 1D;
+            chartArea6.AxisY.Maximum = 0.1D;
+            chartArea6.AxisY.Minimum = -0.1D;
+            chartArea6.Name = "ChartArea1";
+            chartArea6.Position.Auto = false;
+            chartArea6.Position.Height = 100F;
+            chartArea6.Position.Width = 100F;
+            this.chart3.ChartAreas.Add(chartArea6);
+            this.chart3.Location = new System.Drawing.Point(9, 37);
+            this.chart3.Name = "chart3";
+            series6.ChartArea = "ChartArea1";
+            series6.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Spline;
+            series6.Name = "Series1";
+            this.chart3.Series.Add(series6);
+            this.chart3.Size = new System.Drawing.Size(405, 99);
+            this.chart3.TabIndex = 18;
+            this.chart3.Text = "chart3";
             // 
             // MainInterface
             // 
@@ -1103,12 +1133,14 @@
             ((System.ComponentModel.ISupportInitialize)(this.DeadBandLowerUpDown)).EndInit();
             this.PositionPlotGroupBox.ResumeLayout(false);
             this.PositionPlotGroupBox.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.chart1)).EndInit();
             this.VelocityPlotGroupBox.ResumeLayout(false);
             this.VelocityPlotGroupBox.PerformLayout();
             this.AccelerationPlotGroupBox.ResumeLayout(false);
             this.AccelerationPlotGroupBox.PerformLayout();
             this.GraphsGroupBox.ResumeLayout(false);
-            ((System.ComponentModel.ISupportInitialize)(this.chart1)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.chart2)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.chart3)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -1176,8 +1208,6 @@
         private System.Windows.Forms.TextBox VelocityPlotCurrentTextBox;
         private System.Windows.Forms.Label VelocityPlotCurrentLabel;
         private System.Windows.Forms.GroupBox AccelerationPlotGroupBox;
-        private ZedGraph.ZedGraphControl VelocityGraph;
-        private ZedGraph.ZedGraphControl AccelerationGraph;
         private System.Windows.Forms.RadioButton AccelerationPlotCountsRadioButton;
         private System.Windows.Forms.RadioButton AccelerationPlotRadRadioButton;
         private System.Windows.Forms.RadioButton AccelerationPlotDegRadioButton;
@@ -1198,6 +1228,8 @@
         private System.Windows.Forms.TextBox textBox2;
         private System.Windows.Forms.TextBox textBox3;
         private System.Windows.Forms.DataVisualization.Charting.Chart chart1;
+        private System.Windows.Forms.DataVisualization.Charting.Chart chart2;
+        private System.Windows.Forms.DataVisualization.Charting.Chart chart3;
     }
 }
 
