@@ -14,16 +14,16 @@ byte decoderHigh = 0, decoderLow = 0;
 byte checksum = 0;
 byte startByte = 0, portByte = 0, dataByte = 0, checkByte = 0;
 const byte START = 255, REQ = 0;
-const byte DecoderHighPort = 0, DecoderLowPort = 1, DACPort = 2, DACCheckPort = 3;
+const byte DecoderHighPort = 0, DecoderLowPort = 1, DACPort = 2, DACCheckPort = 3, DecoderRSTPort = 4;
 
 // Decoder Polling Variables
-int deltaT = 100; // Time period to read in microseconds
+int deltaT = 1000; // Time period to read in microseconds
 int64_t oldMicros = 0;
 int16_t tempData = 0;
 
 // the setup function runs once when you press reset or power the board
 void setup() {
-	Serial.begin(9600);
+	Serial.begin(57600);
 	DDRA = 0xFF;
 	DDRF = 0x00;
 	DDRK = 0x00;
@@ -32,13 +32,20 @@ void setup() {
 // the loop function runs over and over again until power down or reset
 void loop() {
 	if (!Serial)
-    Serial.begin(9600);
-  if(tempData >= 20000) tempData = 0;
+    Serial.begin(57600);
 
 	if (checkTime(deltaT)) {
 		ReadDecoderBytes();
-    tempData++;
+    tempData += 1;
 	}
+
+   if(tempData >= 20000 || tempData <= -20000) {
+    if(tempData >= 20000)
+      SendOutgoingData(DecoderRSTPort, (byte)1);
+    if(tempData <= -20000)
+      SendOutgoingData(DecoderRSTPort, (byte)2);
+    tempData = 0;
+  }
 
 	while (Serial.available() >= 4) {
 		startByte = Serial.read();

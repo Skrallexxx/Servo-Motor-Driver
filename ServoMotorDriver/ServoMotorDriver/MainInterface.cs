@@ -2,47 +2,60 @@
 using System.Windows.Forms;
 using System.IO.Ports;
 using System.Diagnostics;
-using ServoMotorDriver;
+using System.Drawing;
+using System.Drawing.Drawing2D;
 using System.Collections.Generic;
 using System.Windows.Forms.DataVisualization.Charting;
+using System.Threading;
 
 namespace ServoMotorDriver {
     public partial class MainInterface : Form {
+        public static MainInterface instance;
 
         #region Variables and Control/Communication Properties
-        // Received inputs and outgoing outputs
-        private int decoderHigh = 0, decoderLow = 0, dacCurrentValue = 0;
-        private byte[] Inputs = new byte[4];
-        private byte[] Outputs = new byte[4];
-
-        // Communication Variables
-        const byte decoderHighPort = 0, decoderLowPort = 1, DACPort = 2, DACCheckPort = 3;
-        const byte START = 255, REQ = 0;
-
         // Tuning and Deadband Variables
         private decimal binaryMax = 255, binaryMin = 5;
         private byte deadBandMin = 113, deadBandMax = 146;
 
         // Decoder Position, Velocity and Acceleration Variables
         Int16 currentPos = 0;
-        Int32 totalPos = 0;
-        DataPointCollection positionPoints;
-        DataPointCollection velocityPoints;
-        DataPointCollection accelerationPoints;
-        int maxPositionPoints = 100, currentPositionPointsPos = -1;
-        int maxVelocityPoints = 100, currentVelocityPointsPos = -1;
-        int maxAccelerationPoints = 100, currentAccelerationPointsPos = -1;
+        static int currentPosAtomic = 0;
+        int currentRotationPos = 0;
+        Int64 totalPos = 0;
+
+        // Desired postion variables
+        int desiredPos = 0;
+        int desiredRotationPos = 0;
+
+        // Circle Plot Variables
+        private BufferedGraphicsContext circlePlotContext;
+        private BufferedGraphics circlePlotBuffer;
+        private Bitmap circlePlotSurface;
+        private Rectangle[] circleRectangles = new Rectangle[2];
+        private Rectangle circleBounds;
+        private Pen[] circlePlotPens = new Pen[2];
+        private Pen outerCirclePlotPen;
+        private float[] circleDiameters = new float[2], circleRadii = new float[2];
 
         // Stopwatches for determinining elapsed times
-        Stopwatch uptimeSW = new Stopwatch();
+        //Stopwatch uptimeSW = new Stopwatch();
         Random rand = new Random();
 
-        // Current selected mode and direction
+        // Enums for current selected modes of operation
         ControlEnums.MODE currentMode = ControlEnums.MODE.FREESPIN;
-        ControlEnums.DIRECTION currentDirection = ControlEnums.DIRECTION.CLOCKWISE;
+        ControlEnums.DATAMODE currentDataMode = ControlEnums.DATAMODE.DECODER;
+        ControlEnums.POSITIONUNITS currentPositionUnit = ControlEnums.POSITIONUNITS.DEG;
+        ControlEnums.VELOCITYUNITS currentVelocityUnit = ControlEnums.VELOCITYUNITS.DEG;
+        ControlEnums.ACCELERATIONUNITS currentAccelerationUnit = ControlEnums.ACCELERATIONUNITS.DEG;
 
         // DAC Object, stores Binary <> Voltage Gradient and Intercept
         private DAC dac1 = new DAC(0.1206m, -15.697m);
+
+        // Threading
+        Thread testDataThread;
+
+        // Sub-Forms
+        TestDataSettingsForm testDataSettings;
 
         #endregion
 
@@ -51,21 +64,23 @@ namespace ServoMotorDriver {
         public MainInterface() {
             Debug.WriteLine("Servo Motor Driver Starting Up...");
             InitializeComponent();
-            uptimeSW.Start();
+            instance = this;
+
+            // Start the test data thread to incremement data without affecting GUI performance
+            testDataThread = new Thread(new ThreadStart(IncrementTestData));
+            testDataThread.Start();
 
             // Add the MODE enums to the dropdown mode selection box
-            foreach (ControlEnums.MODE mode in Enum.GetValues(typeof(ControlEnums.MODE))) {
+            foreach (ControlEnums.MODE mode in Enum.GetValues(typeof(ControlEnums.MODE)))
                 ModeSelectionBox.Items.Add(ControlEnums.GetAttribute(mode).disp);
-            }
             ModeSelectionBox.SelectedIndex = 0;
             WriteMessage("Added Mode Selection Options");
 
-            // Add the DIRECTION enums to the dropdown direction selection box
-            foreach (ControlEnums.DIRECTION direction in Enum.GetValues(typeof(ControlEnums.DIRECTION))) {
-                DirectionSelectionBox.Items.Add(ControlEnums.GetAttribute(direction).disp);
-            }
-            DirectionSelectionBox.SelectedIndex = 0;
-            WriteMessage("Added Direction Selection Options");
+            // Add the DATAMODE enums to the dropdown data mode selection box
+            foreach(ControlEnums.DATAMODE dataMode in Enum.GetValues(typeof(ControlEnums.DATAMODE)))
+                DataModeSelectionBox.Items.Add(ControlEnums.GetAttribute(dataMode).disp);
+            DataModeSelectionBox.SelectedIndex = 0;
+            WriteMessage("Added Data Mode Selection Options");
 
             // Add available COM ports to the dropdown port selection box
             ComPortSelectionBox.DataSource = SerialPort.GetPortNames();
@@ -73,25 +88,45 @@ namespace ServoMotorDriver {
 
             // Establish connection using selected COM port
             if (ComPortSelectionBox.Items.Count > 0)
-                TryOpenSerialCommunication(ComPortSelectionBox.SelectedItem.ToString());
+                Communications.TryOpenSerialCommunication(ComPortSelectionBox.SelectedItem.ToString());
             else WriteError("No Available COM Ports");
 
             // Set NumericUpDown Bounds
             VoltageControlVoltageUpDown.Maximum = CalculateVoltageFromBinary(binaryMax);
             VoltageControlVoltageUpDown.Minimum = CalculateVoltageFromBinary(binaryMin);
 
-            // Set Bar Chart Bounds
-            VoltageControlNegativeChart.ChartAreas["ChartArea1"].Axes[1].Maximum = (double)(0 - CalculateVoltageFromBinary(binaryMin));
-            VoltageControlPositiveChart.ChartAreas["ChartArea1"].Axes[1].Maximum = (double)CalculateVoltageFromBinary(binaryMax);
-
             // Set Dead-Band Bounds
             DeadBandLowerUpDown.Value = deadBandMin;
             DeadBandUpperUpDown.Value = deadBandMax;
 
-            // Add chart stuff
-            positionPoints = chart1.Series[0].Points;
-            velocityPoints = chart2.Series[0].Points;
-            accelerationPoints = chart3.Series[0].Points;
+            // Add Circle plot stuff
+            InitializeCirclePlot();
+        }
+
+        // Sets up the properties of the motor position visualisation circle
+        private void InitializeCirclePlot() {
+            circlePlotSurface = new Bitmap(circlePlotPanel.ClientRectangle.Width, circlePlotPanel.ClientRectangle.Height, System.Drawing.Imaging.PixelFormat.Format24bppRgb);
+            circleBounds = new Rectangle(0, 0, circlePlotSurface.Width, circlePlotSurface.Height);
+            circleBounds.Inflate(-1, -1);
+
+            float xCenter = (float)(circleBounds.Width / 2.0);
+            float yCenter = (float)(circleBounds.Height / 2.0);
+
+            // Pen types for circle lines and position points
+            circlePlotPens[0] = new Pen(Color.Red, 4);
+            circlePlotPens[1] = new Pen(Color.Green, 4);
+            outerCirclePlotPen = new Pen(Color.Black, 1);
+
+            // Diameters of the 2 different circles
+            circleDiameters[0] = (float)(circlePlotSurface.Width / 1.1);
+            circleDiameters[1] = (float)(circlePlotSurface.Width / 1.2);
+
+            for (int i = 0; i < 2; i++) {
+                circleRadii[i] = (float)(circleDiameters[i] / 2.0);
+                circleRectangles[i] = new Rectangle((int)Math.Round(xCenter - circleRadii[i]),
+                    (int)Math.Round(yCenter - circleRadii[i]), (int)Math.Round(circleDiameters[i]), (int)Math.Round(circleDiameters[i]));
+            }
+            WriteMessage("Initialisation of circle plot complete");
         }
 
         #endregion
@@ -99,17 +134,48 @@ namespace ServoMotorDriver {
         #region Program Loop
 
         // Send-Recieve method, runs every 10 ticks
-        private void SendReceiveUpdate(object sender, EventArgs e) {
+        private void ProgramLoop(object sender, EventArgs e) {
             if (!SerialComPort.IsOpen && ComPortSelectionBox.Items.Count > 0)
-                TryOpenSerialCommunication(ComPortSelectionBox.SelectedItem.ToString());
+                Communications.TryOpenSerialCommunication(ComPortSelectionBox.SelectedItem.ToString());
 
-            // Check for any incoming data packets
-            //ReadIncomingData();
-            currentPos += (Int16)rand.Next(-20, 50);
-            if (currentPos >= 2000 || currentPos <= -2000)
+            // Modify current position dependent on current data mode
+            if (currentDataMode == ControlEnums.DATAMODE.DECODER)
+                Communications.ReadIncomingData();
+            if (currentDataMode == ControlEnums.DATAMODE.TEST || currentDataMode == ControlEnums.DATAMODE.TESTRAND)
+                currentPos = (Int16)currentPosAtomic;
+
+            // Calculate low and high bytes if not in decoder mode
+            if (currentDataMode != ControlEnums.DATAMODE.DECODER) {
+                Communications.decoderHigh = (byte)(currentPos >> 8);
+                Communications.decoderLow = (byte)(currentPos);
+            }
+
+            // Assemble 2 bytes into 16bit integer and determine current rotation position
+            currentPos = (Int16)((Communications.decoderHigh << 8) | Communications.decoderLow);
+            currentRotationPos = (Int16)(currentPos % 2000);
+
+            // Reset currentPos after 10 rotations in either direction
+            if (currentDataMode != ControlEnums.DATAMODE.DECODER && (currentPos >= 20000 || currentPos <= -20000)) {
+                totalPos += currentPos;
                 currentPos = 0;
-            decoderHigh = (byte)(currentPos >> 8);
-            decoderLow = (byte)(currentPos);
+            }
+
+            // Write low byte, high byte and position values to the interface
+            HighByteTextBox.Text = Communications.decoderHigh.ToString();
+            LowByteTextBox.Text = Communications.decoderLow.ToString();
+            PositionIntegerUpDown.Value = currentPos;
+
+            // Write the current position (in deg, rad, counts or revs) to the interface
+            PositionPlotCurrentTextBox.Text = CalculatePositionDisplay();
+
+            // Draw the motor visualisation circle
+            drawCirclePlot();
+
+
+
+            /*
+
+            currentRotationPos = (Int16)(currentPos % 2000);
 
             textBox1.Text = decoderHigh.ToString();
             textBox2.Text = decoderLow.ToString();
@@ -144,160 +210,42 @@ namespace ServoMotorDriver {
             chart1.Update();
             chart2.Update();
             chart3.Update();
-        }
 
-        void SetChartXAxesMaximums() {
-            if(positionPoints.Count > 0) {
-                chart1.ChartAreas[0].Axes[0].Minimum = positionPoints.FindMinByValue("X").XValue;
-                chart1.ChartAreas[0].Axes[0].Maximum = positionPoints.FindMaxByValue("X").XValue;
-            }
-            if (velocityPoints.Count > 0) {
-                chart2.ChartAreas[0].Axes[0].Minimum = velocityPoints.FindMinByValue("X").XValue;
-                chart2.ChartAreas[0].Axes[0].Maximum = velocityPoints.FindMaxByValue("X").XValue;
-            }
-            if(accelerationPoints.Count > 0) {
-                chart3.ChartAreas[0].Axes[0].Minimum = accelerationPoints.FindMinByValue("X").XValue;
-                chart3.ChartAreas[0].Axes[0].Maximum = accelerationPoints.FindMaxByValue("X").XValue;
-            }
-        }
+            drawCirclePlot();
 
-        void AddPositionPointToChart(double x, double y) {
-            currentPositionPointsPos++;
-            if (currentPositionPointsPos >= maxPositionPoints)
-                currentPositionPointsPos = 0;
-
-            if (positionPoints.Count >= maxPositionPoints) 
-                positionPoints[currentPositionPointsPos].SetValueXY(x, y);
-            else
-                positionPoints.AddXY(x, y);
-        }
-
-        int GetPositionPointsPreviousPos(int offset) {
-            if (currentPositionPointsPos - offset < 0)
-                return maxPositionPoints + (currentPositionPointsPos - offset);
-            else return currentPositionPointsPos - offset;
-        }
-
-        List<DataPoint> GetPastPositionPoints(int num) {
-            List<DataPoint> prev = new List<DataPoint>();
-            for (int i = 0; i < num; i++) {
-                prev.Add(positionPoints[GetPositionPointsPreviousPos(i)]);
-            }
-            return prev;
-        }
-
-        void AddVelocityPointToChart(double x, double y) {
-            currentVelocityPointsPos++;
-            if (currentVelocityPointsPos >= maxVelocityPoints)
-                currentVelocityPointsPos = 0;
-
-            if (velocityPoints.Count >= maxVelocityPoints)
-                velocityPoints[currentVelocityPointsPos].SetValueXY(x, y);
-            else
-                velocityPoints.AddXY(x, y);
-        }
-
-        int GetVelocityPointsPreviousPos(int offset) {
-            if (currentVelocityPointsPos - offset < 0)
-                return maxVelocityPoints + (currentVelocityPointsPos - offset);
-            else return currentVelocityPointsPos - offset;
-        }
-
-        List<DataPoint> GetPastVelocityPoints(int num) {
-            List<DataPoint> prev = new List<DataPoint>();
-            for(int i = 0; i < num; i++) {
-                prev.Add(velocityPoints[GetVelocityPointsPreviousPos(i)]);
-            }
-            return prev;
-        }
-
-        void AddAccelerationPointToChart(double x, double y) {
-            currentAccelerationPointsPos++;
-            if (currentAccelerationPointsPos >= maxAccelerationPoints)
-                currentAccelerationPointsPos = 0;
-
-            if (accelerationPoints.Count >= maxAccelerationPoints)
-                accelerationPoints[currentAccelerationPointsPos].SetValueXY(x, y);
-            else
-                accelerationPoints.AddXY(x, y);
+            */
         }
 
         #endregion
 
-        #region Communication Send/Receive
+        #region Threaded Methods
+        // Increments the test data (with randomness if in random mode). Runs in a separate thread.
+        public void IncrementTestData() {
+            Stopwatch uptimeSW = new Stopwatch();
+            uptimeSW.Start();
+            long currentUptime = uptimeSW.ElapsedMilliseconds;
 
-        void TryOpenSerialCommunication(string portName, bool reOpen = false) {
-            // Check if the bluetooth has been connected
-            if (SerialComPort.PortName == portName && SerialComPort.IsOpen) {
-                WriteMessage("Communication is already established on the selected COM port");
-                return;
-            }
-            if (reOpen = true && SerialComPort.IsOpen)
-                SerialComPort.Close();
-            if (!SerialComPort.IsOpen) {
-                if (portName.Length == 0)
-                    return;
-                SerialComPort.PortName = portName;
-                try {
-                    //Try to connect to the bluetooth
-                    WriteMessage("Attempting to open communication on " + portName);
-                    SerialComPort.Open();
-                    WriteMessage("Communication successfully opened on " + portName);
-                }
-                catch {
-                    //If the bluetooth does not connect return an error
-                    WriteError("Failed to open communication on " + portName);
-                }
-            }
-        }
+            while (true) {
+                while (currentDataMode == ControlEnums.DATAMODE.TEST || currentDataMode == ControlEnums.DATAMODE.TESTRAND) {
+                    if (uptimeSW.ElapsedMilliseconds - currentUptime >= TestDataSettingsForm.interval) {
+                        currentUptime = uptimeSW.ElapsedMilliseconds;
 
-        void ReadIncomingData() {
-            if (!SerialComPort.IsOpen) return;
+                        if (currentDataMode == ControlEnums.DATAMODE.TESTRAND)
+                            Interlocked.Add(ref currentPosAtomic, rand.Next(TestDataSettingsForm.randMinIncrement, TestDataSettingsForm.randMaxIncrement));
+                        else Interlocked.Add(ref currentPosAtomic, TestDataSettingsForm.increment);
 
-            // Send an update request for incoming values
-            SendOutgoingData(decoderHighPort, REQ);
-            SendOutgoingData(decoderLowPort, REQ);
-            SendOutgoingData(DACCheckPort, REQ);
-
-            while(SerialComPort.BytesToRead >= 4) {
-                Inputs[0] = (byte)SerialComPort.ReadByte();
-                if (Inputs[0] != START) return;
-                Inputs[1] = (byte)SerialComPort.ReadByte();
-                Inputs[2] = (byte)SerialComPort.ReadByte();
-                Inputs[3] = (byte)SerialComPort.ReadByte();
-
-                byte checksum = (byte)(Inputs[0] + Inputs[1] + Inputs[2]);
-                if (Inputs[3] != checksum) {
-                    WriteError("Received invalid data packet");
-                    return;
+                        if(currentPosAtomic >= 20000) {
+                            Interlocked.Exchange(ref currentPosAtomic, 0);
+                            Interlocked.Add(ref totalPos, 20000);
+                        }
+                        if(currentPosAtomic <= -20000) {
+                            Interlocked.Exchange(ref currentPosAtomic, 0);
+                            Interlocked.Add(ref totalPos, -20000);
+                        }
+                    }
                 }
-
-                if (Inputs[1] == decoderHighPort) {
-                    decoderHigh = Inputs[2];
-                    textBox1.Text = decoderHigh.ToString();
-                }
-                else if (Inputs[1] == decoderLowPort) {
-                    decoderLow = Inputs[2];
-                    textBox2.Text = decoderLow.ToString();
-                }
-                else if (Inputs[1] == DACCheckPort) {
-                    dacCurrentValue = Inputs[2];
-                    RawControlCurrentTextBox.Text = dacCurrentValue.ToString();
-                    RawCurrentVoltageTextBox.Text = CalculateVoltageFromBinary(dacCurrentValue).ToString();
-                }
-                else WriteError("Received invalid PORT byte " + Inputs[2]);
             }
         }
-
-        void SendOutgoingData(byte PORT, byte DATA) {
-            Outputs[0] = START;
-            Outputs[1] = PORT;
-            Outputs[2] = DATA;
-            Outputs[3] = (byte)(START + PORT + DATA);
-            if (!SerialComPort.IsOpen) return;
-            SerialComPort.Write(Outputs, 0, 4);
-        }
-
         #endregion
 
         #region Interface Helper Methods
@@ -305,7 +253,7 @@ namespace ServoMotorDriver {
         // Called when the COM port selection is changed, updates COM port in use for serial communication
         private void OnComPortSelectionChanged(object sender, EventArgs e) {
             WriteMessage("COM Port selection modified, updating serial communication");
-            TryOpenSerialCommunication(ComPortSelectionBox.SelectedItem.ToString(), true);
+            Communications.TryOpenSerialCommunication(ComPortSelectionBox.SelectedItem.ToString(), true);
         }
 
         // Called when the mode selection is changed, updates the current operation mode
@@ -331,15 +279,18 @@ namespace ServoMotorDriver {
             else DeadBandTestingGroupBox.Enabled = false;
         }
 
-        // Called when the direction selection is changed, updates the current direction
-        private void OnDirectionSelectionChanged(object sender, EventArgs e) {
-            foreach (ControlEnums.DIRECTION direction in Enum.GetValues(typeof(ControlEnums.DIRECTION))) {
-                if (DirectionSelectionBox.Text == ControlEnums.GetAttribute(direction).disp) {
-                    currentDirection = direction;
+        // Called when the data mode selection is changed, updates the current data mode
+        private void OnDataModeSelectionChanged(object sender, EventArgs e) {
+            foreach(ControlEnums.DATAMODE dataMode in Enum.GetValues(typeof(ControlEnums.DATAMODE))) {
+                if(DataModeSelectionBox.Text == ControlEnums.GetAttribute(dataMode).disp) {
+                    currentDataMode = dataMode;
                     break;
                 }
             }
-            WriteMessage("Selected direction updated to " + ControlEnums.GetAttribute(currentDirection).disp);
+            WriteMessage("Selected data mode updated to " + ControlEnums.GetAttribute(currentDataMode).disp);
+
+            if (currentDataMode == ControlEnums.DATAMODE.MANUAL) PositionIntegerUpDown.ReadOnly = false;
+            else PositionIntegerUpDown.ReadOnly = true;
         }
 
         // Called when the binary output value is changed, and sends the value to the arduino
@@ -358,17 +309,17 @@ namespace ServoMotorDriver {
             }
 
             VoltageControlVoltageUpDown.Value = CalculateVoltageFromBinary(RawControlUpDown.Value);
-            //UpdateVoltageCharts(CalculateVoltageFromBinary(RawControlUpDown.Value));
-            SendOutgoingData(DACPort, compensated);
+            Communications.SendOutgoingData(Communications.DACPort, compensated);
             RawVoltageTextBox.Text = CalculateVoltageFromBinary(compensated).ToString();
         }
 
-        // 
+        // Called when the voltage control up-down is changed, calculates the binary equivalent
         private void OnVoltageControlValueChanged(object sender, EventArgs e) {
             UpdateVoltageCharts(VoltageControlVoltageUpDown.Value);
             RawControlUpDown.Value = CalculateBinaryFromVoltage(VoltageControlVoltageUpDown.Value);
         }
 
+        // Updates the graphical chart displaying the current DAC voltage value
         private void UpdateVoltageCharts(decimal dataValue) {
             if (dataValue < 0) {
                 VoltageControlNegativeChart.Series["Series1"].Points[0].YValues = new double[] { (double)(0 - dataValue) };
@@ -383,32 +334,136 @@ namespace ServoMotorDriver {
             VoltageControlNegativeChart.Update();
         }
 
+        // Called when the minimum dead band value is changed
         private void OnDeadBandMinValueChanged(object sender, EventArgs e) {
             deadBandMin = (byte)DeadBandLowerUpDown.Value;
         }
 
+        // Called when the maximum dead band value is changed
         private void OnDeadBandMaxValueChanged(object sender, EventArgs e) {
             deadBandMax = (byte)DeadBandUpperUpDown.Value;
+        }
+
+        // Called when the manual position value is changed, updates the currentPos
+        private void OnPositionIntegerValueChanged(object sender, EventArgs e) {
+            if (currentDataMode != ControlEnums.DATAMODE.MANUAL)
+                return;
+            currentPos = (Int16)PositionIntegerUpDown.Value;
+        }
+
+        // Called when the position unit radio button is changed (deg, rad, counts, revs), updates the current position unit
+        private void OnPositionRadioChanged(object sender, EventArgs e) {
+            if (PositionPlotDegRadioButton.Checked)
+                currentPositionUnit = ControlEnums.POSITIONUNITS.DEG;
+            if (PositionPlotRadRadioButton.Checked)
+                currentPositionUnit = ControlEnums.POSITIONUNITS.RAD;
+            if (PositionPlotCountsRadioButton.Checked)
+                currentPositionUnit = ControlEnums.POSITIONUNITS.COUNTS;
+            if (PositionPlotRevsRadioButton.Checked)
+                currentPositionUnit = ControlEnums.POSITIONUNITS.REVS;
+            WriteMessage("Current Position Unit updated to " + ControlEnums.GetAttribute(currentPositionUnit).disp);
+        }
+
+        // Called when the velocity unit radio button is changed (deg/s, rad/s, counts/s, RPM), updates the current velocity unit
+        private void OnVelocityRadioChanged(object sender, EventArgs e) {
+            if (VelocityPlotDegRadioButton.Checked)
+                currentVelocityUnit = ControlEnums.VELOCITYUNITS.DEG;
+            if (VelocityPlotRadRadioButton.Checked)
+                currentVelocityUnit = ControlEnums.VELOCITYUNITS.RAD;
+            if (VelocityPlotCountsRadioButton.Checked)
+                currentVelocityUnit = ControlEnums.VELOCITYUNITS.COUNTS;
+            if (VelocityPlotRPMRadioButton.Checked)
+                currentVelocityUnit = ControlEnums.VELOCITYUNITS.RPM;
+            WriteMessage("Current Velocity Unit updated to " + ControlEnums.GetAttribute(currentVelocityUnit).disp);
+        }
+
+        // Called when the acceleration unit radio button is changed (deg/s², rad/s², counts/s², RPM/s), updates the current acceleration unit
+        private void OnAccelerationRadioChanged(object sender, EventArgs e) {
+            if (AccelerationPlotDegRadioButton.Checked)
+                currentAccelerationUnit = ControlEnums.ACCELERATIONUNITS.DEG;
+            if (AccelerationPlotRadRadioButton.Checked)
+                currentAccelerationUnit = ControlEnums.ACCELERATIONUNITS.RAD;
+            if (AccelerationPlotCountsRadioButton.Checked)
+                currentAccelerationUnit = ControlEnums.ACCELERATIONUNITS.COUNTS;
+            if (AccelerationPlotRPMRadioButton.Checked)
+                currentAccelerationUnit = ControlEnums.ACCELERATIONUNITS.RPM;
+            WriteMessage("Current Acceleration Unit updated to " + ControlEnums.GetAttribute(currentAccelerationUnit).disp);
+        }
+
+        // Called when the Test Data Settings button is clicked from the context menu
+        private void OnTestDataSettingsMenuClick(object sender, EventArgs e) {
+            testDataSettings = new TestDataSettingsForm();
+            testDataSettings.Show();
+        }
+
+        // Called when the Dead Band Settings button is clicked from the context menu
+        private void OnDeadBandSettingsMenuClicked(object sender, EventArgs e) {
+
+        }
+
+        // Called when the form is closed, aborts the testDataThread to prevent it from continuing
+        private void OnFormClosed(object sender, FormClosedEventArgs e) {
+            testDataThread.Abort();
+            if(testDataSettings != null)
+                testDataSettings.Close();
         }
 
         #endregion
 
         #region Data Calculation Methods
+        // Calcultes the DAC output voltage from an input binary value
         private decimal CalculateVoltageFromBinary(decimal binary) {
             decimal voltage = dac1.gradient * binary + dac1.intercept;
             return Math.Round(voltage, 2);
         }
 
+        // Calculates the DAC input binary value from an output voltage
         private byte CalculateBinaryFromVoltage(decimal voltage) {
             decimal binary = Math.Round((voltage - dac1.intercept) / dac1.gradient);
             if (binary > 255) binary = 255;
             if (binary < 5) binary = 5;
             return (byte)Math.Round(binary);
         }
+
+        // Calculates the Position value to display for the currently selected position unit
+        private string CalculatePositionDisplay() {
+            if (currentPositionUnit == ControlEnums.POSITIONUNITS.COUNTS)
+                return (totalPos + currentPos).ToString();
+            if (currentPositionUnit == ControlEnums.POSITIONUNITS.DEG)
+                return (360.0 * (double)(currentRotationPos / 2000.0)).ToString();
+            if (currentPositionUnit == ControlEnums.POSITIONUNITS.RAD)
+                return 2.0 * (double)(currentRotationPos / 2000.0) + " π";
+            if (currentPositionUnit == ControlEnums.POSITIONUNITS.REVS)
+                return ((totalPos + currentPos) / 2000).ToString();
+            return "0";
+        }
         #endregion
 
         #region Data Plotting Methods
         private void PlotPosition(Int16 startTime, Int16 currentTime, String data) {
+        }
+
+        // Draws the motor visualisation circle to the interface
+        private void drawCirclePlot() {
+            circlePlotContext = new BufferedGraphicsContext();
+            circlePlotBuffer = circlePlotContext.Allocate(Graphics.FromImage(circlePlotSurface), circleBounds);
+            circlePlotBuffer.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
+            circlePlotBuffer.Graphics.Clear(SystemColors.Control);
+
+            float xCenter = (float)(circleBounds.Width / 2.0);
+            float yCenter = (float)(circleBounds.Height / 2.0);
+
+            circlePlotBuffer.Graphics.DrawEllipse(outerCirclePlotPen, circleRectangles[0]);
+            circlePlotBuffer.Graphics.DrawEllipse(circlePlotPens[0], (float)(circleRadii[0] * Math.Cos(currentRotationPos * 2 * Math.PI / 2000.0) + xCenter) - 2, 
+                                                    (float)(-circleRadii[0] * Math.Sin(currentRotationPos * 2 * Math.PI / 2000.0) + yCenter) - 2, 4, 4);
+
+            circlePlotBuffer.Graphics.DrawEllipse(outerCirclePlotPen, circleRectangles[1]);
+            circlePlotBuffer.Graphics.DrawEllipse(circlePlotPens[1], (float)(circleRadii[1] * Math.Cos(desiredRotationPos * 2 * Math.PI / 2000.0) + xCenter) - 2,
+                                                    (float)(-circleRadii[1] * Math.Sin(desiredRotationPos * 2 * Math.PI / 2000.0) + yCenter) - 2, 4, 4);
+
+            circlePlotBuffer.Render(circlePlotPanel.CreateGraphics());
+            circlePlotBuffer.Dispose();
+            circlePlotContext.Dispose();
         }
         #endregion
 
