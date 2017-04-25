@@ -342,8 +342,8 @@ namespace ServoMotorDriver {
         public void PlotData() {
             while(true) {
                 if (graphingOpen && graphs != null)
-                    graphs.AddGraphingEntry(new GraphingDataEntry(uptimeSW.ElapsedMilliseconds).setVoltage(Communications.dacCurrentValue)
-                                                                                           .setBinary(CalculateBinaryFromVoltage(Communications.dacCurrentValue))
+                    graphs.AddGraphingEntry(new GraphingDataEntry(uptimeSW.ElapsedMilliseconds).setVoltage((double)CalculateVoltageFromBinary(Communications.dacCurrentValue))
+                                                                                           .setBinary(Communications.dacCurrentValue)
                                                                                            .setPosition(totalPos + currentPos).setRotationPosition(currentRotationPos).setVelocity(velocity)
                                                                                            .setAcceleration(acceleration));
                 Thread.Sleep(250);

@@ -1,7 +1,7 @@
 /*
- Name:		ArduinoCode.ino
- Created:	3/7/2017 11:31:51 AM
- Author:	Alex
+Name:		ArduinoCode.ino
+Created:	3/7/2017 11:31:51 AM
+Author:	Alex
 */
 // Decoder Pin Mappings
 const int SEL = PORTK0, OE = PORTK1, RST = PORTK2;
@@ -12,8 +12,8 @@ byte decoderHigh = 0, decoderLow = 0;
 
 // Communication Variables
 byte checksum = 0;
-byte startByte = 0, portByte = 0, dataByte1 = 0, dataByte2 = 0, checkByte = 0;
-const byte START = 0x7e, REQ = 0;
+byte startByte = 0, portByte = 0, dataByte = 0, checkByte = 0;
+const byte START = 255, REQ = 0;
 const byte DecoderHighPort = 0, DecoderLowPort = 1, DACPort = 2, DACCheckPort = 3, DecoderRSTPort = 4;
 
 // Decoder Polling Variables
@@ -32,34 +32,31 @@ void setup() {
 // the loop function runs over and over again until power down or reset
 void loop() {
 	if (!Serial)
-    Serial.begin(57600);
+		Serial.begin(57600);
 
 	if (checkTime(deltaT)) {
 		ReadDecoderBytes();
-    tempData += 1;
+		tempData += 1;
 	}
 
-   if(tempData >= 20000 || tempData <= -20000) {
-    if(tempData >= 20000)
-      SendOutgoingData(DecoderRSTPort, (byte)1);
-    if(tempData <= -20000)
-      SendOutgoingData(DecoderRSTPort, (byte)2);
-    tempData = 0;
-  }
+	if (tempData >= 20000 || tempData <= -20000) {
+		if (tempData >= 20000)
+			SendOutgoingData(DecoderRSTPort, (byte)1);
+		if (tempData <= -20000)
+			SendOutgoingData(DecoderRSTPort, (byte)2);
+		tempData = 0;
+	}
 
-	while (Serial.available() >= 5) {
+	while (Serial.available() >= 4) {
 		startByte = Serial.read();
 
 		if (startByte != START) return;
 		portByte = Serial.read();
-		dataByte1 = Serial.read();
-    dataByte2 = Serial.read();
+		dataByte = Serial.read();
 		checkByte = Serial.read();
-		checksum = startByte + portByte + dataByte1;
+		checksum = startByte + portByte + dataByte;
 
 		if (checkByte != checksum) return;
-
-    if(dataByte1 != dataByte2) return;
 
 		// Request for Decoder Port A data received, read the port and send data
 		if (portByte == DecoderHighPort) {
@@ -75,7 +72,7 @@ void loop() {
 
 		// DAC data received, write it to the DAC port
 		if (portByte == DACPort) {
-			dacValue = dataByte1;
+			dacValue = dataByte;
 			PORTA = dacValue;
 		}
 
@@ -88,7 +85,6 @@ void loop() {
 void SendOutgoingData(byte PORT, byte DATA) {
 	Serial.write(START);
 	Serial.write(PORT);
-  Serial.write(DATA);
 	Serial.write(DATA);
 	Serial.write((byte)(START + PORT + DATA));
 }
@@ -106,7 +102,7 @@ void ReadDecoderBytes() {
 	digitalWrite(OE, LOW);
 
 	decoderHigh = PINF;
-	
+
 	digitalWrite(SEL, HIGH);
 
 	decoderLow = PINF;
@@ -119,7 +115,7 @@ byte bitFlip(byte value) {
 	byte j = 7;
 	for (byte i = 0; i < 8; i++) {
 		bitWrite(bFlip, i, bitRead(value, j));
-			j--;
+		j--;
 	}
 	return bFlip;
 }
