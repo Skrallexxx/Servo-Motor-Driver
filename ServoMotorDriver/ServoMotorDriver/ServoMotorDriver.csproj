@@ -33,9 +33,24 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="LiveCharts, Version=0.9.6.0, Culture=neutral, PublicKeyToken=0bc1f845d1ebb8df, processorArchitecture=MSIL">
+      <HintPath>..\packages\LiveCharts.0.9.6\lib\net45\LiveCharts.dll</HintPath>
+    </Reference>
+    <Reference Include="LiveCharts.WinForms, Version=0.9.6.0, Culture=neutral, PublicKeyToken=0bc1f845d1ebb8df, processorArchitecture=MSIL">
+      <HintPath>..\packages\LiveCharts.WinForms.0.9.6\lib\net45\LiveCharts.WinForms.dll</HintPath>
+    </Reference>
+    <Reference Include="LiveCharts.Wpf, Version=0.9.6.0, Culture=neutral, PublicKeyToken=0bc1f845d1ebb8df, processorArchitecture=MSIL">
+      <HintPath>..\packages\LiveCharts.Wpf.0.9.6\lib\net45\LiveCharts.Wpf.dll</HintPath>
+    </Reference>
+    <Reference Include="Newtonsoft.Json, Version=10.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <HintPath>..\packages\Newtonsoft.Json.10.0.2\lib\net45\Newtonsoft.Json.dll</HintPath>
+    </Reference>
+    <Reference Include="PresentationCore" />
+    <Reference Include="PresentationFramework" />
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Windows.Forms.DataVisualization" />
+    <Reference Include="System.Xaml" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
@@ -45,6 +60,8 @@
     <Reference Include="System.Net.Http" />
     <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Xml" />
+    <Reference Include="WindowsBase" />
+    <Reference Include="WindowsFormsIntegration" />
     <Reference Include="ZedGraph">
       <HintPath>.\ZedGraph.dll</HintPath>
     </Reference>
@@ -56,14 +73,19 @@
     <Compile Include="DAC.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="ControlEnums.cs">
-      <SubType>Form</SubType>
-    </Compile>
+    <Compile Include="ControlEnums.cs" />
     <Compile Include="DeadBandSettingsForm.cs">
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="DeadBandSettingsForm.Designer.cs">
       <DependentUpon>DeadBandSettingsForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="GraphingDataEntry.cs" />
+    <Compile Include="GraphingForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="GraphingForm.Designer.cs">
+      <DependentUpon>GraphingForm.cs</DependentUpon>
     </Compile>
     <Compile Include="MainInterface.cs">
       <SubType>Form</SubType>
@@ -73,6 +95,12 @@
     </Compile>
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="RealtimeDataSettingsForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="RealtimeDataSettingsForm.Designer.cs">
+      <DependentUpon>RealtimeDataSettingsForm.cs</DependentUpon>
+    </Compile>
     <Compile Include="TestDataSettingsForm.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -81,6 +109,9 @@
     </Compile>
     <EmbeddedResource Include="DeadBandSettingsForm.resx">
       <DependentUpon>DeadBandSettingsForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="GraphingForm.resx">
+      <DependentUpon>GraphingForm.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="MainInterface.resx">
       <DependentUpon>MainInterface.cs</DependentUpon>
@@ -95,9 +126,13 @@
       <DependentUpon>Resources.resx</DependentUpon>
       <DesignTime>True</DesignTime>
     </Compile>
+    <EmbeddedResource Include="RealtimeDataSettingsForm.resx">
+      <DependentUpon>RealtimeDataSettingsForm.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="TestDataSettingsForm.resx">
       <DependentUpon>TestDataSettingsForm.cs</DependentUpon>
     </EmbeddedResource>
+    <None Include="packages.config" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>

@@ -17,9 +17,16 @@ namespace ServoMotorDriver {
 
         public TestDataSettingsForm() {
             InitializeComponent();
+            MainInterface.testDataSettingsOpen = true;
+            IntervalUpDown.Value = interval;
+            IncrementUpDown.Value = increment;
+            MinRandomIncrementUpDown.Value = randMinIncrement;
+            MaxRandomIncrementUpDown.Value = randMaxIncrement;
+
             RPMTextBox.Text = Math.Round((60.0 * 1000.0 * increment / (2000.0 * interval)), 2).ToString();
         }
 
+        #region Interface Helper Methods
         // Updates the increment interval
         private void OnIncrementIntervalChanged(object sender, EventArgs e) {
             interval = (int)IntervalUpDown.Value;
@@ -49,5 +56,10 @@ namespace ServoMotorDriver {
             MinRandomIncrementUpDown.Value = defaultRandMinIncrement;
             MaxRandomIncrementUpDown.Value = defaultRandMaxIncrement;
         }
+
+        private void OnFormClosed(object sender, FormClosedEventArgs e) {
+            MainInterface.testDataSettingsOpen = false;
+        }
+        #endregion
     }
 }

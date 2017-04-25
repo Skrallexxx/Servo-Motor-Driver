@@ -12,8 +12,8 @@ byte decoderHigh = 0, decoderLow = 0;
 
 // Communication Variables
 byte checksum = 0;
-byte startByte = 0, portByte = 0, dataByte = 0, checkByte = 0;
-const byte START = 255, REQ = 0;
+byte startByte = 0, portByte = 0, dataByte1 = 0, dataByte2 = 0, checkByte = 0;
+const byte START = 0x7e, REQ = 0;
 const byte DecoderHighPort = 0, DecoderLowPort = 1, DACPort = 2, DACCheckPort = 3, DecoderRSTPort = 4;
 
 // Decoder Polling Variables
@@ -47,16 +47,19 @@ void loop() {
     tempData = 0;
   }
 
-	while (Serial.available() >= 4) {
+	while (Serial.available() >= 5) {
 		startByte = Serial.read();
 
 		if (startByte != START) return;
 		portByte = Serial.read();
-		dataByte = Serial.read();
+		dataByte1 = Serial.read();
+    dataByte2 = Serial.read();
 		checkByte = Serial.read();
-		checksum = startByte + portByte + dataByte;
+		checksum = startByte + portByte + dataByte1;
 
 		if (checkByte != checksum) return;
+
+    if(dataByte1 != dataByte2) return;
 
 		// Request for Decoder Port A data received, read the port and send data
 		if (portByte == DecoderHighPort) {
@@ -72,7 +75,7 @@ void loop() {
 
 		// DAC data received, write it to the DAC port
 		if (portByte == DACPort) {
-			dacValue = dataByte;
+			dacValue = dataByte1;
 			PORTA = dacValue;
 		}
 
@@ -85,6 +88,7 @@ void loop() {
 void SendOutgoingData(byte PORT, byte DATA) {
 	Serial.write(START);
 	Serial.write(PORT);
+  Serial.write(DATA);
 	Serial.write(DATA);
 	Serial.write((byte)(START + PORT + DATA));
 }

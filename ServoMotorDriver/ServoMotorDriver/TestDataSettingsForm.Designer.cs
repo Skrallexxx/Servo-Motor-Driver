@@ -25,6 +25,8 @@
         private void InitializeComponent() {
             this.components = new System.ComponentModel.Container();
             this.TestDataConfigurationGroupBox = new System.Windows.Forms.GroupBox();
+            this.RPMLabel = new System.Windows.Forms.Label();
+            this.RPMTextBox = new System.Windows.Forms.TextBox();
             this.TestDataRandomGroupBox = new System.Windows.Forms.GroupBox();
             this.label1 = new System.Windows.Forms.Label();
             this.MaxRandomIncrementUpDown = new System.Windows.Forms.NumericUpDown();
@@ -34,8 +36,6 @@
             this.IncrementUpDown = new System.Windows.Forms.NumericUpDown();
             this.IncrementLabel = new System.Windows.Forms.Label();
             this.IntervalUpDown = new System.Windows.Forms.NumericUpDown();
-            this.RPMTextBox = new System.Windows.Forms.TextBox();
-            this.RPMLabel = new System.Windows.Forms.Label();
             this.ResetDefaultButton = new System.Windows.Forms.Button();
             this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
             this.TestDataConfigurationGroupBox.SuspendLayout();
@@ -61,6 +61,25 @@
             this.TestDataConfigurationGroupBox.TabIndex = 0;
             this.TestDataConfigurationGroupBox.TabStop = false;
             this.TestDataConfigurationGroupBox.Text = "Test Data Settings";
+            // 
+            // RPMLabel
+            // 
+            this.RPMLabel.AutoSize = true;
+            this.RPMLabel.Location = new System.Drawing.Point(6, 74);
+            this.RPMLabel.Name = "RPMLabel";
+            this.RPMLabel.Size = new System.Drawing.Size(84, 13);
+            this.RPMLabel.TabIndex = 3;
+            this.RPMLabel.Text = "Equivalent RPM";
+            this.toolTip1.SetToolTip(this.RPMLabel, "The equivalent motor RPM for the given interval and increment amount");
+            // 
+            // RPMTextBox
+            // 
+            this.RPMTextBox.Location = new System.Drawing.Point(134, 71);
+            this.RPMTextBox.Name = "RPMTextBox";
+            this.RPMTextBox.ReadOnly = true;
+            this.RPMTextBox.Size = new System.Drawing.Size(120, 20);
+            this.RPMTextBox.TabIndex = 2;
+            this.toolTip1.SetToolTip(this.RPMTextBox, "The equivalent motor RPM for the given interval and increment amount");
             // 
             // TestDataRandomGroupBox
             // 
@@ -220,30 +239,11 @@
             this.IntervalUpDown.TabIndex = 0;
             this.toolTip1.SetToolTip(this.IntervalUpDown, "The interval between incrementing the test data (in milliseconds)");
             this.IntervalUpDown.Value = new decimal(new int[] {
-            100,
+            10,
             0,
             0,
             0});
             this.IntervalUpDown.ValueChanged += new System.EventHandler(this.OnIncrementIntervalChanged);
-            // 
-            // RPMTextBox
-            // 
-            this.RPMTextBox.Location = new System.Drawing.Point(134, 71);
-            this.RPMTextBox.Name = "RPMTextBox";
-            this.RPMTextBox.ReadOnly = true;
-            this.RPMTextBox.Size = new System.Drawing.Size(120, 20);
-            this.RPMTextBox.TabIndex = 2;
-            this.toolTip1.SetToolTip(this.RPMTextBox, "The equivalent motor RPM for the given interval and increment amount");
-            // 
-            // RPMLabel
-            // 
-            this.RPMLabel.AutoSize = true;
-            this.RPMLabel.Location = new System.Drawing.Point(6, 74);
-            this.RPMLabel.Name = "RPMLabel";
-            this.RPMLabel.Size = new System.Drawing.Size(84, 13);
-            this.RPMLabel.TabIndex = 3;
-            this.RPMLabel.Text = "Equivalent RPM";
-            this.toolTip1.SetToolTip(this.RPMLabel, "The equivalent motor RPM for the given interval and increment amount");
             // 
             // ResetDefaultButton
             // 
@@ -263,11 +263,13 @@
             this.ClientSize = new System.Drawing.Size(284, 227);
             this.Controls.Add(this.ResetDefaultButton);
             this.Controls.Add(this.TestDataConfigurationGroupBox);
-            this.MinimumSize = new System.Drawing.Size(300, 203);
+            this.MaximumSize = new System.Drawing.Size(300, 266);
+            this.MinimumSize = new System.Drawing.Size(300, 266);
             this.Name = "TestDataSettingsForm";
             this.ShowIcon = false;
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
             this.Text = "Test Data Settings";
+            this.FormClosed += new System.Windows.Forms.FormClosedEventHandler(this.OnFormClosed);
             this.TestDataConfigurationGroupBox.ResumeLayout(false);
             this.TestDataConfigurationGroupBox.PerformLayout();
             this.TestDataRandomGroupBox.ResumeLayout(false);

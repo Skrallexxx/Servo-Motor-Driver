@@ -11,21 +11,31 @@ using System.Threading;
 namespace ServoMotorDriver {
     public partial class MainInterface : Form {
         public static MainInterface instance;
+        public static bool deadbandSettingsOpen = false;
+        public static bool testDataSettingsOpen = false;
+        public static bool realtimeDataSettingsOpen = false;
+        public static bool graphingOpen = false;
 
         #region Variables and Control/Communication Properties
         // Tuning and Deadband Variables
-        private decimal binaryMax = 255, binaryMin = 5;
-        private byte deadBandMin = 113, deadBandMax = 146;
+        public decimal binaryMax = 255, binaryMin = 5;
 
-        // Decoder Position, Velocity and Acceleration Variables
-        Int16 currentPos = 0;
-        static int currentPosAtomic = 0;
-        int currentRotationPos = 0;
-        Int64 totalPos = 0;
+        // Decoder Position Variables
+        public Int16 currentPos { get; set; } = 0;
+        public int currentPosAtomic= 0;
+        public int currentRotationPos { get; set; } = 0;
+        public Int64 totalPos { get; set;} = 0;
+        public Int64 totalPosAtomic = 0;
+
+        // Velocity Variables
+        public double velocity = 0;
+
+        // Acceleration variables
+        public double acceleration = 0;
 
         // Desired postion variables
-        int desiredPos = 0;
-        int desiredRotationPos = 0;
+        public int desiredPos = 0;
+        public int desiredRotationPos = 0;
 
         // Circle Plot Variables
         private BufferedGraphicsContext circlePlotContext;
@@ -38,24 +48,30 @@ namespace ServoMotorDriver {
         private float[] circleDiameters = new float[2], circleRadii = new float[2];
 
         // Stopwatches for determinining elapsed times
-        //Stopwatch uptimeSW = new Stopwatch();
+        Stopwatch uptimeSW = new Stopwatch();
         Random rand = new Random();
 
         // Enums for current selected modes of operation
         ControlEnums.MODE currentMode = ControlEnums.MODE.FREESPIN;
         ControlEnums.DATAMODE currentDataMode = ControlEnums.DATAMODE.DECODER;
-        ControlEnums.POSITIONUNITS currentPositionUnit = ControlEnums.POSITIONUNITS.DEG;
-        ControlEnums.VELOCITYUNITS currentVelocityUnit = ControlEnums.VELOCITYUNITS.DEG;
-        ControlEnums.ACCELERATIONUNITS currentAccelerationUnit = ControlEnums.ACCELERATIONUNITS.DEG;
+        ControlEnums.POSITIONUNITS currentPositionUnit = ControlEnums.POSITIONUNITS.COUNTS;
+        ControlEnums.VELOCITYUNITS currentVelocityUnit = ControlEnums.VELOCITYUNITS.COUNTS;
+        ControlEnums.ACCELERATIONUNITS currentAccelerationUnit = ControlEnums.ACCELERATIONUNITS.COUNTS;
 
         // DAC Object, stores Binary <> Voltage Gradient and Intercept
         private DAC dac1 = new DAC(0.1206m, -15.697m);
 
         // Threading
         Thread testDataThread;
+        Thread velocityThread;
+        Thread accelerationThread;
+        Thread plottingThread;
 
         // Sub-Forms
-        TestDataSettingsForm testDataSettings;
+        TestDataSettingsForm testDataSettings = null;
+        DeadBandSettingsForm deadbandSettings = null;
+        RealtimeDataSettingsForm realtimeDataSettings = null;
+        GraphingForm graphs = null;
 
         #endregion
 
@@ -66,9 +82,22 @@ namespace ServoMotorDriver {
             InitializeComponent();
             instance = this;
 
+            uptimeSW.Start();
+
             // Start the test data thread to incremement data without affecting GUI performance
             testDataThread = new Thread(new ThreadStart(IncrementTestData));
             testDataThread.Start();
+
+            // Start the velocity sampling thread
+            velocityThread = new Thread(new ThreadStart(CalculateVelocity));
+            velocityThread.Start();
+
+            // Start the acceleration sampling thread
+            accelerationThread = new Thread(new ThreadStart(CalculateAcceleration));
+            accelerationThread.Start();
+
+            plottingThread = new Thread(new ThreadStart(PlotData));
+            plottingThread.Start();
 
             // Add the MODE enums to the dropdown mode selection box
             foreach (ControlEnums.MODE mode in Enum.GetValues(typeof(ControlEnums.MODE)))
@@ -82,6 +111,24 @@ namespace ServoMotorDriver {
             DataModeSelectionBox.SelectedIndex = 0;
             WriteMessage("Added Data Mode Selection Options");
 
+            // Add the POSITIONUNITS enums to the dropdown position unit selection box
+            foreach (ControlEnums.POSITIONUNITS unit in Enum.GetValues(typeof(ControlEnums.POSITIONUNITS)))
+                CurrentPositionUnitSelectionBox.Items.Add(ControlEnums.GetAttribute(unit).disp);
+            CurrentPositionUnitSelectionBox.SelectedIndex = 0;
+            WriteMessage("Added Position Unit Selection Options");
+
+            // Add the VELOCITYUNTIS enums to the dropdown velocity unit selection box
+            foreach (ControlEnums.VELOCITYUNITS unit in Enum.GetValues(typeof(ControlEnums.VELOCITYUNITS)))
+                CurrentVelocityUnitSelectionBox.Items.Add(ControlEnums.GetAttribute(unit).disp);
+            CurrentVelocityUnitSelectionBox.SelectedIndex = 0;
+            WriteMessage("Added Velocity Unit Selection Options");
+
+            // Add the ACCELERATIONUNITS enums to the dropdown acceleration unit selection box
+            foreach (ControlEnums.ACCELERATIONUNITS unit in Enum.GetValues(typeof(ControlEnums.ACCELERATIONUNITS)))
+                CurrentAccelerationUnitSelectionBox.Items.Add(ControlEnums.GetAttribute(unit).disp);
+            CurrentAccelerationUnitSelectionBox.SelectedIndex = 0;
+            WriteMessage("Added Acceleration Unit Selection Options");
+
             // Add available COM ports to the dropdown port selection box
             ComPortSelectionBox.DataSource = SerialPort.GetPortNames();
             WriteMessage("Added COM Port Selection Options");
@@ -94,10 +141,6 @@ namespace ServoMotorDriver {
             // Set NumericUpDown Bounds
             VoltageControlVoltageUpDown.Maximum = CalculateVoltageFromBinary(binaryMax);
             VoltageControlVoltageUpDown.Minimum = CalculateVoltageFromBinary(binaryMin);
-
-            // Set Dead-Band Bounds
-            DeadBandLowerUpDown.Value = deadBandMin;
-            DeadBandUpperUpDown.Value = deadBandMax;
 
             // Add Circle plot stuff
             InitializeCirclePlot();
@@ -159,19 +202,27 @@ namespace ServoMotorDriver {
                 totalPos += currentPos;
                 currentPos = 0;
             }
+            totalPos = totalPosAtomic;
 
             // Write low byte, high byte and position values to the interface
             HighByteTextBox.Text = Communications.decoderHigh.ToString();
             LowByteTextBox.Text = Communications.decoderLow.ToString();
             PositionIntegerUpDown.Value = currentPos;
 
-            // Write the current position (in deg, rad, counts or revs) to the interface
-            PositionPlotCurrentTextBox.Text = CalculatePositionDisplay();
+            // Calculate current position (in deg, rad, counts or revs) and write to the interface
+            CurrentPositionTextBox.Text = CalculatePositionDisplay();
+
+            // Calculate current velocity (in deg/s, rad/s, counts/s or RPM) and write to the interface
+            CurrentVelocityTextBox.Text = CalculateVelocityDisplay();
+
+            // Calculate current acceleration (in deg/s², rad/s², counts/s² or RPM/s) and write to the interface
+            CurrentAccelerationTextBox.Text = CalculateAccelerationDisplay();
+
+            // Send data to the graphs
+
 
             // Draw the motor visualisation circle
             drawCirclePlot();
-
-
 
             /*
 
@@ -221,8 +272,7 @@ namespace ServoMotorDriver {
         #region Threaded Methods
         // Increments the test data (with randomness if in random mode). Runs in a separate thread.
         public void IncrementTestData() {
-            Stopwatch uptimeSW = new Stopwatch();
-            uptimeSW.Start();
+            Stopwatch uptimeSW = Stopwatch.StartNew();
             long currentUptime = uptimeSW.ElapsedMilliseconds;
 
             while (true) {
@@ -236,16 +286,70 @@ namespace ServoMotorDriver {
 
                         if(currentPosAtomic >= 20000) {
                             Interlocked.Exchange(ref currentPosAtomic, 0);
-                            Interlocked.Add(ref totalPos, 20000);
+                            Interlocked.Add(ref totalPosAtomic, 20000);
                         }
                         if(currentPosAtomic <= -20000) {
                             Interlocked.Exchange(ref currentPosAtomic, 0);
-                            Interlocked.Add(ref totalPos, -20000);
+                            Interlocked.Add(ref totalPosAtomic, -20000);
                         }
                     }
                 }
             }
         }
+
+        // Calculates the velocity over a certain number of samples (and sample-period). Runs in a separate thread to more easily configure sample period
+        public void CalculateVelocity() {
+            Stopwatch positionSW = Stopwatch.StartNew();
+            List<Int64> lastPositions = new List<Int64>();
+            int lastPositionsIndex = 0;
+
+            while(true) {
+                lastPositions.Insert(lastPositionsIndex, totalPos + currentPos);
+                lastPositionsIndex++;
+                if (lastPositionsIndex >= RealtimeDataSettingsForm.velocitySamples) {
+                    lastPositionsIndex = 0;
+                    positionSW.Stop();
+
+                    double avgPositionChange = (lastPositions[RealtimeDataSettingsForm.velocitySamples - 1] - lastPositions[0]) / (double)RealtimeDataSettingsForm.velocitySamples;
+
+                    Interlocked.Exchange(ref velocity, avgPositionChange * RealtimeDataSettingsForm.velocitySamples / (positionSW.ElapsedMilliseconds / 1000.0));
+                    positionSW.Restart();
+                }
+                Thread.Sleep(RealtimeDataSettingsForm.velocityPeriod);
+            }
+        }
+
+        public void CalculateAcceleration() {
+            Stopwatch accelerationSW = Stopwatch.StartNew();
+            List<Double> lastVelocities = new List<Double>();
+            int lastVelocitiesIndex = 0;
+
+            while(true) {
+                lastVelocities.Insert(lastVelocitiesIndex, velocity);
+                lastVelocitiesIndex++;
+                if(lastVelocitiesIndex >= RealtimeDataSettingsForm.accelerationSamples) {
+                    lastVelocitiesIndex = 0;
+                    accelerationSW.Stop();
+                    double avgVelocityChange = (lastVelocities[RealtimeDataSettingsForm.accelerationSamples - 1] - lastVelocities[0]) / (double)RealtimeDataSettingsForm.accelerationSamples;
+
+                    Interlocked.Exchange(ref acceleration, avgVelocityChange * RealtimeDataSettingsForm.accelerationSamples / (accelerationSW.ElapsedMilliseconds / 1000.0));
+                    accelerationSW.Restart();
+                }
+                Thread.Sleep(RealtimeDataSettingsForm.accelerationPeriod);
+            }
+        }
+
+        public void PlotData() {
+            while(true) {
+                if (graphingOpen && graphs != null)
+                    graphs.AddGraphingEntry(new GraphingDataEntry(uptimeSW.ElapsedMilliseconds).setVoltage(Communications.dacCurrentValue)
+                                                                                           .setBinary(CalculateBinaryFromVoltage(Communications.dacCurrentValue))
+                                                                                           .setPosition(totalPos + currentPos).setRotationPosition(currentRotationPos).setVelocity(velocity)
+                                                                                           .setAcceleration(acceleration));
+                Thread.Sleep(250);
+            }
+        }
+
         #endregion
 
         #region Interface Helper Methods
@@ -274,9 +378,6 @@ namespace ServoMotorDriver {
 
             if (currentMode == ControlEnums.MODE.POSITIONAL) PositionControlGroupBox.Enabled = true;
             else PositionControlGroupBox.Enabled = false;
-
-            if (currentMode == ControlEnums.MODE.DEAD_BAND_TEST) DeadBandTestingGroupBox.Enabled = true;
-            else DeadBandTestingGroupBox.Enabled = false;
         }
 
         // Called when the data mode selection is changed, updates the current data mode
@@ -293,19 +394,52 @@ namespace ServoMotorDriver {
             else PositionIntegerUpDown.ReadOnly = true;
         }
 
+        // Called when the position unit selection is changed
+        private void OnPositionUnitSelectionChanged(object sender, EventArgs e) {
+            foreach(ControlEnums.POSITIONUNITS unit in Enum.GetValues(typeof(ControlEnums.POSITIONUNITS))) {
+                if (CurrentPositionUnitSelectionBox.Text == ControlEnums.GetAttribute(unit).disp) {
+                    currentPositionUnit = unit;
+                    break;
+                }
+            }
+            WriteMessage("Selected Position Unit updated to " + ControlEnums.GetAttribute(currentPositionUnit).disp);
+        }
+
+        // Called when the velocity unit selection is changed
+        private void OnVelocityUnitSelectionChanged(object sender, EventArgs e) {
+            foreach(ControlEnums.VELOCITYUNITS unit in Enum.GetValues(typeof(ControlEnums.VELOCITYUNITS))) {
+                if(CurrentVelocityUnitSelectionBox.Text == ControlEnums.GetAttribute(unit).disp) {
+                    currentVelocityUnit = unit;
+                    break;
+                }
+            }
+            WriteMessage("Selected Velocity Unit updated to " + ControlEnums.GetAttribute(currentVelocityUnit).disp);
+        }
+
+        // Called when the acceleration unit selection is changed
+        private void OnAccelerationUnitSelectionChanged(object sender, EventArgs e) {
+            foreach (ControlEnums.ACCELERATIONUNITS unit in Enum.GetValues(typeof(ControlEnums.ACCELERATIONUNITS))) {
+                if (CurrentAccelerationUnitSelectionBox.Text == ControlEnums.GetAttribute(unit).disp) {
+                    currentAccelerationUnit = unit;
+                    break;
+                }
+            }
+            WriteMessage("Selected Acceleration Unit updated to " + ControlEnums.GetAttribute(currentAccelerationUnit).disp);
+        }
+
         // Called when the binary output value is changed, and sends the value to the arduino
         private void OnRawControlValueChanged(object sender, EventArgs e) {
             RawBinaryChart.Series["Series1"].Points[0].YValues = new double[]{(double)RawControlUpDown.Value};
             RawBinaryChart.Update();
 
             byte compensated = (byte)RawControlUpDown.Value;
-            if(DeadBandCompensationCheckBox.Checked && RawControlUpDown.Value > deadBandMin && RawControlUpDown.Value < deadBandMax) {
+            if(DeadBandCompensationCheckBox.Checked && RawControlUpDown.Value > DeadBandSettingsForm.min && RawControlUpDown.Value < DeadBandSettingsForm.max) {
                 if (RawControlUpDown.Value > CalculateBinaryFromVoltage(0))
-                    compensated = deadBandMax;
+                    compensated = (byte)DeadBandSettingsForm.max;
                 else if (RawControlUpDown.Value == CalculateBinaryFromVoltage(0)) {
                     compensated = CalculateBinaryFromVoltage(0);
                 }
-                else compensated = deadBandMin;
+                else compensated = (byte)DeadBandSettingsForm.min;
             }
 
             VoltageControlVoltageUpDown.Value = CalculateVoltageFromBinary(RawControlUpDown.Value);
@@ -334,16 +468,6 @@ namespace ServoMotorDriver {
             VoltageControlNegativeChart.Update();
         }
 
-        // Called when the minimum dead band value is changed
-        private void OnDeadBandMinValueChanged(object sender, EventArgs e) {
-            deadBandMin = (byte)DeadBandLowerUpDown.Value;
-        }
-
-        // Called when the maximum dead band value is changed
-        private void OnDeadBandMaxValueChanged(object sender, EventArgs e) {
-            deadBandMax = (byte)DeadBandUpperUpDown.Value;
-        }
-
         // Called when the manual position value is changed, updates the currentPos
         private void OnPositionIntegerValueChanged(object sender, EventArgs e) {
             if (currentDataMode != ControlEnums.DATAMODE.MANUAL)
@@ -351,74 +475,65 @@ namespace ServoMotorDriver {
             currentPos = (Int16)PositionIntegerUpDown.Value;
         }
 
-        // Called when the position unit radio button is changed (deg, rad, counts, revs), updates the current position unit
-        private void OnPositionRadioChanged(object sender, EventArgs e) {
-            if (PositionPlotDegRadioButton.Checked)
-                currentPositionUnit = ControlEnums.POSITIONUNITS.DEG;
-            if (PositionPlotRadRadioButton.Checked)
-                currentPositionUnit = ControlEnums.POSITIONUNITS.RAD;
-            if (PositionPlotCountsRadioButton.Checked)
-                currentPositionUnit = ControlEnums.POSITIONUNITS.COUNTS;
-            if (PositionPlotRevsRadioButton.Checked)
-                currentPositionUnit = ControlEnums.POSITIONUNITS.REVS;
-            WriteMessage("Current Position Unit updated to " + ControlEnums.GetAttribute(currentPositionUnit).disp);
-        }
-
-        // Called when the velocity unit radio button is changed (deg/s, rad/s, counts/s, RPM), updates the current velocity unit
-        private void OnVelocityRadioChanged(object sender, EventArgs e) {
-            if (VelocityPlotDegRadioButton.Checked)
-                currentVelocityUnit = ControlEnums.VELOCITYUNITS.DEG;
-            if (VelocityPlotRadRadioButton.Checked)
-                currentVelocityUnit = ControlEnums.VELOCITYUNITS.RAD;
-            if (VelocityPlotCountsRadioButton.Checked)
-                currentVelocityUnit = ControlEnums.VELOCITYUNITS.COUNTS;
-            if (VelocityPlotRPMRadioButton.Checked)
-                currentVelocityUnit = ControlEnums.VELOCITYUNITS.RPM;
-            WriteMessage("Current Velocity Unit updated to " + ControlEnums.GetAttribute(currentVelocityUnit).disp);
-        }
-
-        // Called when the acceleration unit radio button is changed (deg/s², rad/s², counts/s², RPM/s), updates the current acceleration unit
-        private void OnAccelerationRadioChanged(object sender, EventArgs e) {
-            if (AccelerationPlotDegRadioButton.Checked)
-                currentAccelerationUnit = ControlEnums.ACCELERATIONUNITS.DEG;
-            if (AccelerationPlotRadRadioButton.Checked)
-                currentAccelerationUnit = ControlEnums.ACCELERATIONUNITS.RAD;
-            if (AccelerationPlotCountsRadioButton.Checked)
-                currentAccelerationUnit = ControlEnums.ACCELERATIONUNITS.COUNTS;
-            if (AccelerationPlotRPMRadioButton.Checked)
-                currentAccelerationUnit = ControlEnums.ACCELERATIONUNITS.RPM;
-            WriteMessage("Current Acceleration Unit updated to " + ControlEnums.GetAttribute(currentAccelerationUnit).disp);
-        }
-
         // Called when the Test Data Settings button is clicked from the context menu
         private void OnTestDataSettingsMenuClick(object sender, EventArgs e) {
-            testDataSettings = new TestDataSettingsForm();
+            if(testDataSettings == null || !testDataSettingsOpen)
+                testDataSettings = new TestDataSettingsForm();
             testDataSettings.Show();
+            testDataSettings.BringToFront();
         }
 
         // Called when the Dead Band Settings button is clicked from the context menu
         private void OnDeadBandSettingsMenuClicked(object sender, EventArgs e) {
+            if(deadbandSettings == null || !deadbandSettingsOpen)
+                deadbandSettings = new DeadBandSettingsForm();
+            deadbandSettings.Show();
+            deadbandSettings.BringToFront();
+        }
 
+        private void OnRealtimeDataSettingsMenuClicked(object sender, EventArgs e) {
+            if (realtimeDataSettings == null || !realtimeDataSettingsOpen)
+                realtimeDataSettings = new RealtimeDataSettingsForm();
+            realtimeDataSettings.Show();
+            realtimeDataSettings.BringToFront();
+        }
+
+        private void OnGraphsMenuClicked(object sender, EventArgs e) {
+            if (graphs == null || !graphingOpen)
+                graphs = new GraphingForm();
+            graphs.Show();
+            graphs.BringToFront();
         }
 
         // Called when the form is closed, aborts the testDataThread to prevent it from continuing
         private void OnFormClosed(object sender, FormClosedEventArgs e) {
             testDataThread.Abort();
-            if(testDataSettings != null)
+            velocityThread.Abort();
+            accelerationThread.Abort();
+            plottingThread.Abort();
+
+            // Close any still-open subforms
+            if(testDataSettings != null || testDataSettingsOpen)
                 testDataSettings.Close();
+            if (deadbandSettings != null || deadbandSettingsOpen)
+                deadbandSettings.Close();
+            if (realtimeDataSettings != null || realtimeDataSettingsOpen)
+                realtimeDataSettings.Close();
+            if (graphs != null || graphingOpen)
+                graphs.Close();
         }
 
         #endregion
 
         #region Data Calculation Methods
         // Calcultes the DAC output voltage from an input binary value
-        private decimal CalculateVoltageFromBinary(decimal binary) {
+        public decimal CalculateVoltageFromBinary(decimal binary) {
             decimal voltage = dac1.gradient * binary + dac1.intercept;
             return Math.Round(voltage, 2);
         }
 
         // Calculates the DAC input binary value from an output voltage
-        private byte CalculateBinaryFromVoltage(decimal voltage) {
+        public byte CalculateBinaryFromVoltage(decimal voltage) {
             decimal binary = Math.Round((voltage - dac1.intercept) / dac1.gradient);
             if (binary > 255) binary = 255;
             if (binary < 5) binary = 5;
@@ -426,23 +541,44 @@ namespace ServoMotorDriver {
         }
 
         // Calculates the Position value to display for the currently selected position unit
-        private string CalculatePositionDisplay() {
+        public string CalculatePositionDisplay() {
             if (currentPositionUnit == ControlEnums.POSITIONUNITS.COUNTS)
                 return (totalPos + currentPos).ToString();
             if (currentPositionUnit == ControlEnums.POSITIONUNITS.DEG)
-                return (360.0 * (double)(currentRotationPos / 2000.0)).ToString();
+                return Math.Round((360.0 * (double)(currentRotationPos / 2000.0)), 2).ToString();
             if (currentPositionUnit == ControlEnums.POSITIONUNITS.RAD)
-                return 2.0 * (double)(currentRotationPos / 2000.0) + " π";
+                return Math.Round(2.0 * (double)(currentRotationPos / 2000.0), 2) + " π";
             if (currentPositionUnit == ControlEnums.POSITIONUNITS.REVS)
-                return ((totalPos + currentPos) / 2000).ToString();
+                return Math.Round(((totalPos + currentPos) / 2000.0), 2).ToString();
+            return "0";
+        }
+
+        public string CalculateVelocityDisplay() {
+            if (currentVelocityUnit == ControlEnums.VELOCITYUNITS.COUNTS)
+                return Math.Round(velocity, 2).ToString();
+            if (currentVelocityUnit == ControlEnums.VELOCITYUNITS.DEG)
+                return Math.Round((360.0 * (velocity / 2000.0)), 2).ToString();
+            if (currentVelocityUnit == ControlEnums.VELOCITYUNITS.RAD)
+                return Math.Round(2.0 * (velocity / 2000.0), 2) + " π/s";
+            if (currentVelocityUnit == ControlEnums.VELOCITYUNITS.RPM)
+                return Math.Round(((velocity / 2000.0) * 60.0), 2).ToString();
+            return "0";
+        }
+
+        public string CalculateAccelerationDisplay() {
+            if (currentAccelerationUnit == ControlEnums.ACCELERATIONUNITS.COUNTS)
+                return Math.Round(acceleration, 2).ToString();
+            if (currentAccelerationUnit == ControlEnums.ACCELERATIONUNITS.DEG)
+                return Math.Round((360.0 * (acceleration / 2000.0)), 2).ToString();
+            if (currentAccelerationUnit == ControlEnums.ACCELERATIONUNITS.RAD)
+                return Math.Round(2.0 * (acceleration / 2000.0), 2) + " π/s²";
+            if (currentAccelerationUnit == ControlEnums.ACCELERATIONUNITS.RPM)
+                return Math.Round(((acceleration / 2000.0) * 60.0), 2).ToString();
             return "0";
         }
         #endregion
 
         #region Data Plotting Methods
-        private void PlotPosition(Int16 startTime, Int16 currentTime, String data) {
-        }
-
         // Draws the motor visualisation circle to the interface
         private void drawCirclePlot() {
             circlePlotContext = new BufferedGraphicsContext();
@@ -465,6 +601,7 @@ namespace ServoMotorDriver {
             circlePlotBuffer.Dispose();
             circlePlotContext.Dispose();
         }
+
         #endregion
 
         #region Debugging
