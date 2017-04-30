@@ -21,10 +21,10 @@ namespace ServoMotorDriver {
         public decimal binaryMax = 255, binaryMin = 5;
 
         // Decoder Position Variables
-        public Int16 currentPos { get; set; } = 0;
-        public int currentPosAtomic= 0;
-        public int currentRotationPos { get; set; } = 0;
-        public Int64 totalPos { get; set;} = 0;
+        public Int16 currentPos = 0;
+        public int currentPosAtomic = 0;
+        public int currentRotationPos = 0;
+        public Int64 totalPos = 0;
         public Int64 totalPosAtomic = 0;
 
         // Velocity Variables
@@ -197,6 +197,11 @@ namespace ServoMotorDriver {
             currentPos = (Int16)((Communications.decoderHigh << 8) | Communications.decoderLow);
             currentRotationPos = (Int16)(currentPos % 2000);
 
+            if (currentPos >= 20000 || currentPos <= -20000) {
+                Communications.SendResetCommand();
+                totalPosAtomic += currentPos;
+            }
+
             // Reset currentPos after 10 rotations in either direction
             if (currentDataMode != ControlEnums.DATAMODE.DECODER && (currentPos >= 20000 || currentPos <= -20000)) {
                 totalPos += currentPos;
@@ -310,7 +315,12 @@ namespace ServoMotorDriver {
                     lastPositionsIndex = 0;
                     positionSW.Stop();
 
-                    double avgPositionChange = (lastPositions[RealtimeDataSettingsForm.velocitySamples - 1] - lastPositions[0]) / (double)RealtimeDataSettingsForm.velocitySamples;
+                    //double avgPositionChange = (lastPositions[RealtimeDataSettingsForm.velocitySamples - 1] - lastPositions[0]) / (double)RealtimeDataSettingsForm.velocitySamples;
+                    double avgPositionChange = 0.0;
+                    for (int i = 0; i < RealtimeDataSettingsForm.velocitySamples - 1; i++ ) {
+                        avgPositionChange += lastPositions[i+1] - lastPositions[i];
+                    }
+                    avgPositionChange /= (double)RealtimeDataSettingsForm.velocitySamples;
 
                     Interlocked.Exchange(ref velocity, avgPositionChange * RealtimeDataSettingsForm.velocitySamples / (positionSW.ElapsedMilliseconds / 1000.0));
                     positionSW.Restart();
@@ -330,7 +340,12 @@ namespace ServoMotorDriver {
                 if(lastVelocitiesIndex >= RealtimeDataSettingsForm.accelerationSamples) {
                     lastVelocitiesIndex = 0;
                     accelerationSW.Stop();
-                    double avgVelocityChange = (lastVelocities[RealtimeDataSettingsForm.accelerationSamples - 1] - lastVelocities[0]) / (double)RealtimeDataSettingsForm.accelerationSamples;
+                    //double avgVelocityChange = (lastVelocities[RealtimeDataSettingsForm.accelerationSamples - 1] - lastVelocities[0]) / (double)RealtimeDataSettingsForm.accelerationSamples;
+                    double avgVelocityChange = 0.0;
+                    for (int i = 0; i < RealtimeDataSettingsForm.accelerationSamples - 1; i++ ){
+                        avgVelocityChange += lastVelocities[i+1] - lastVelocities[i];
+                    }
+                    avgVelocityChange /= (double)RealtimeDataSettingsForm.accelerationSamples;
 
                     Interlocked.Exchange(ref acceleration, avgVelocityChange * RealtimeDataSettingsForm.accelerationSamples / (accelerationSW.ElapsedMilliseconds / 1000.0));
                     accelerationSW.Restart();
@@ -346,7 +361,7 @@ namespace ServoMotorDriver {
                                                                                            .setBinary(Communications.dacCurrentValue)
                                                                                            .setPosition(totalPos + currentPos).setRotationPosition(currentRotationPos).setVelocity(velocity)
                                                                                            .setAcceleration(acceleration));
-                Thread.Sleep(250);
+                Thread.Sleep(33); 
             }
         }
 

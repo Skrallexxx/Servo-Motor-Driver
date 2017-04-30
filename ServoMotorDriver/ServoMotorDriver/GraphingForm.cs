@@ -39,13 +39,14 @@ namespace ServoMotorDriver {
                 Values = chartValues, PointGeometrySize = 2, StrokeThickness = 2 }};
             Chart.AxisX.Add(new Axis {
                 DisableAnimations = true});
+            Chart.DisableAnimations = true;
             Chart.Hoverable = false;
             Chart.DataTooltip = null;
         }
 
         public void AddGraphingEntry(GraphingDataEntry entry) {
             chartValues.Add(entry);
-            if (chartValues.Count > 40) chartValues.RemoveAt(0);
+            if (chartValues.Count > 330) chartValues.RemoveAt(0);
         }
 
         #region Interface Helper Methods

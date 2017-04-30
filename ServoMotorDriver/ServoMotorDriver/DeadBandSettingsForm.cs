@@ -20,6 +20,7 @@ namespace ServoMotorDriver {
 
         public static int min = 113, defaultMin = 113;
         public static int max = 146, defaultMax = 146;
+        public static int mass = 0, defaultMass = 0;
 
         public static bool deadbandTestRunning = false;
 
@@ -38,6 +39,10 @@ namespace ServoMotorDriver {
                 fs.Close();
             }
 
+            MinUpDown.Value = min;
+            MaxUpDown.Value = max;
+            MassUpDown.Value = mass;
+
             // Attempt to load the file and save the loaded values if they exist
             Dictionary<int, DeadbandEntry> deadbandEntriesToLoad = ReadFromJson(jsonFilePath);
             if (deadbandEntriesToLoad != null) {
@@ -45,7 +50,8 @@ namespace ServoMotorDriver {
                 toolStripStatusLabel1.Text = "Loaded list of " + deadbandEntries.Count + " saved deadband entries.";
 
                 if(deadbandEntries.ContainsKey((int)MassUpDown.Value)) {
-                    deadbandEntries.TryGetValue((int)MassUpDown.Value, out DeadbandEntry defaultEntry);
+                    DeadbandEntry defaultEntry;
+                    deadbandEntries.TryGetValue((int)MassUpDown.Value, out defaultEntry);
                     MinUpDown.Value = BoundBinaryUpDown(defaultEntry.min);
                     MaxUpDown.Value = BoundBinaryUpDown(defaultEntry.max);
                 }
@@ -69,7 +75,8 @@ namespace ServoMotorDriver {
         // Called when the save button is clicked, saves the current values to file
         private void OnSaveButtonClick(object sender, EventArgs e) {
             if(deadbandEntries.ContainsKey((int)MassUpDown.Value)) {
-                deadbandEntries.TryGetValue((int)MassUpDown.Value, out DeadbandEntry existingEntry);
+                DeadbandEntry existingEntry;
+                deadbandEntries.TryGetValue((int)MassUpDown.Value, out existingEntry);
                 existingEntry.min = (int)MinUpDown.Value;
                 existingEntry.max = (int)MaxUpDown.Value;
                 toolStripStatusLabel1.Text = "Updated entry for mass " + existingEntry.mass + "g: " + existingEntry.min + " to " + existingEntry.max;
@@ -85,7 +92,8 @@ namespace ServoMotorDriver {
         // Called when the load button is clicked, loads the entry for the current mass if it exists
         private void OnLoadButtonClick(object sender, EventArgs e) {
             if (deadbandEntries.ContainsKey((int)MassUpDown.Value)) {
-                deadbandEntries.TryGetValue((int)MassUpDown.Value, out DeadbandEntry existingEntry);
+                DeadbandEntry existingEntry;
+                deadbandEntries.TryGetValue((int)MassUpDown.Value, out existingEntry);
                 MinUpDown.Value = existingEntry.min;
                 MaxUpDown.Value = existingEntry.max;
                 toolStripStatusLabel1.Text = "Loaded entry for mass " + existingEntry.mass + "g: " + existingEntry.min + " to " + existingEntry.max;
@@ -99,6 +107,7 @@ namespace ServoMotorDriver {
         private void OnResetButtonClick(object sender, EventArgs e) {
             MinUpDown.Value = defaultMin;
             MaxUpDown.Value = defaultMax;
+            MassUpDown.Value = defaultMass;
         }
 
         // Called when the start button is clicked, starts testing for the deadband range
@@ -142,6 +151,10 @@ namespace ServoMotorDriver {
         // Called when the maximum deadband value changes
         private void OnMaxValueChanged(object sender, EventArgs e) {
             max = (int)MaxUpDown.Value;
+        }
+
+        private void OnMassValueChanged(object sender, EventArgs e) {
+            mass = (int)MassUpDown.Value;
         }
 
         // Called when the window is closed, stops the deadband testing thread if it's running
@@ -193,14 +206,15 @@ namespace ServoMotorDriver {
 
             // Testing configuration variables. Potentially move to interface if necessary
             int interval = 1;
-            int sleepTime = 200;
+            int sleepTime = 500;
 
             Console.Write("deadband test thread started");
 
             // Determine maximum deadband binary value
-            while (binaryVal < 255 && (instance.totalPos + instance.currentPos) <= startPos + 200) {
+            while (binaryVal < 255 && (instance.totalPos + instance.currentPos) <= startPos + 1000) {
                 toolStripStatusLabel1.Text = "Stage 1/2";
                 binaryVal += interval;
+                startPos = instance.totalPos + instance.currentPos;
                 comms.SendOutgoingData(comms.DACPort, (byte)binaryVal);
                 Invoke((Action)delegate () { UpdateControls(binaryVal); });
                 Thread.Sleep(sleepTime);
@@ -212,9 +226,10 @@ namespace ServoMotorDriver {
             comms.SendOutgoingData(comms.DACPort, (byte)binaryVal);
 
             // Determine minimum deadband binary value
-            while(binaryVal > 0 && (instance.totalPos + instance.currentPos) >= startPos - 200) {
+            while(binaryVal > 0 && (instance.totalPos + instance.currentPos) >= startPos - 1000) {
                 toolStripStatusLabel1.Text = "Stage 2/2";
                 binaryVal -= interval;
+                startPos = instance.totalPos + instance.currentPos;
                 comms.SendOutgoingData(comms.DACPort, (byte)binaryVal);
                 Invoke((Action)delegate() { UpdateControls(binaryVal); });
                 Thread.Sleep(sleepTime);

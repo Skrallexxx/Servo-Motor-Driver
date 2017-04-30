@@ -91,6 +91,10 @@ namespace ServoMotorDriver {
                 if (!instance.SerialComPort.IsOpen) return;
                 instance.SerialComPort.Write(Outputs, 0, 4);
             }
+
+            public static void SendResetCommand() {
+                SendOutgoingData(decoderRSTPort, 0);
+            }
         }
     }
 }

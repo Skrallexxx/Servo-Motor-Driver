@@ -24,16 +24,16 @@
         /// </summary>
         private void InitializeComponent() {
             this.DeadBandSettingsGroupBox = new System.Windows.Forms.GroupBox();
-            this.groupBox2 = new System.Windows.Forms.GroupBox();
             this.SaveButton = new System.Windows.Forms.Button();
             this.LoadButton = new System.Windows.Forms.Button();
-            this.label6 = new System.Windows.Forms.Label();
+            this.groupBox2 = new System.Windows.Forms.GroupBox();
             this.label5 = new System.Windows.Forms.Label();
             this.label4 = new System.Windows.Forms.Label();
             this.BinaryTextBox = new System.Windows.Forms.TextBox();
             this.PositionTextBox = new System.Windows.Forms.TextBox();
             this.TestingStopButton = new System.Windows.Forms.Button();
             this.TestingStartButton = new System.Windows.Forms.Button();
+            this.label6 = new System.Windows.Forms.Label();
             this.label3 = new System.Windows.Forms.Label();
             this.MassUpDown = new System.Windows.Forms.NumericUpDown();
             this.groupBox1 = new System.Windows.Forms.GroupBox();
@@ -70,21 +70,6 @@
             this.DeadBandSettingsGroupBox.TabStop = false;
             this.DeadBandSettingsGroupBox.Text = "Dead Band Settings";
             // 
-            // groupBox2
-            // 
-            this.groupBox2.Controls.Add(this.label5);
-            this.groupBox2.Controls.Add(this.label4);
-            this.groupBox2.Controls.Add(this.BinaryTextBox);
-            this.groupBox2.Controls.Add(this.PositionTextBox);
-            this.groupBox2.Controls.Add(this.TestingStopButton);
-            this.groupBox2.Controls.Add(this.TestingStartButton);
-            this.groupBox2.Location = new System.Drawing.Point(262, 30);
-            this.groupBox2.Name = "groupBox2";
-            this.groupBox2.Size = new System.Drawing.Size(248, 102);
-            this.groupBox2.TabIndex = 3;
-            this.groupBox2.TabStop = false;
-            this.groupBox2.Text = "Automatic Deadband Testing";
-            // 
             // SaveButton
             // 
             this.SaveButton.Location = new System.Drawing.Point(117, 45);
@@ -105,14 +90,20 @@
             this.LoadButton.UseVisualStyleBackColor = true;
             this.LoadButton.Click += new System.EventHandler(this.OnLoadButtonClick);
             // 
-            // label6
+            // groupBox2
             // 
-            this.label6.AutoSize = true;
-            this.label6.Location = new System.Drawing.Point(6, 50);
-            this.label6.Name = "label6";
-            this.label6.Size = new System.Drawing.Size(88, 13);
-            this.label6.TabIndex = 6;
-            this.label6.Text = "For current mass:";
+            this.groupBox2.Controls.Add(this.label5);
+            this.groupBox2.Controls.Add(this.label4);
+            this.groupBox2.Controls.Add(this.BinaryTextBox);
+            this.groupBox2.Controls.Add(this.PositionTextBox);
+            this.groupBox2.Controls.Add(this.TestingStopButton);
+            this.groupBox2.Controls.Add(this.TestingStartButton);
+            this.groupBox2.Location = new System.Drawing.Point(262, 30);
+            this.groupBox2.Name = "groupBox2";
+            this.groupBox2.Size = new System.Drawing.Size(248, 102);
+            this.groupBox2.TabIndex = 3;
+            this.groupBox2.TabStop = false;
+            this.groupBox2.Text = "Automatic Deadband Testing";
             // 
             // label5
             // 
@@ -171,6 +162,15 @@
             this.TestingStartButton.UseVisualStyleBackColor = true;
             this.TestingStartButton.Click += new System.EventHandler(this.OnStartButtonClick);
             // 
+            // label6
+            // 
+            this.label6.AutoSize = true;
+            this.label6.Location = new System.Drawing.Point(6, 50);
+            this.label6.Name = "label6";
+            this.label6.Size = new System.Drawing.Size(88, 13);
+            this.label6.TabIndex = 6;
+            this.label6.Text = "For current mass:";
+            // 
             // label3
             // 
             this.label3.AutoSize = true;
@@ -191,6 +191,7 @@
             this.MassUpDown.Name = "MassUpDown";
             this.MassUpDown.Size = new System.Drawing.Size(137, 20);
             this.MassUpDown.TabIndex = 1;
+            this.MassUpDown.ValueChanged += new System.EventHandler(this.OnMassValueChanged);
             // 
             // groupBox1
             // 
@@ -275,7 +276,7 @@
             this.statusStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.TestingProgressBar,
             this.toolStripStatusLabel1});
-            this.statusStrip1.Location = new System.Drawing.Point(0, 172);
+            this.statusStrip1.Location = new System.Drawing.Point(0, 173);
             this.statusStrip1.Name = "statusStrip1";
             this.statusStrip1.Size = new System.Drawing.Size(536, 22);
             this.statusStrip1.TabIndex = 1;
@@ -296,7 +297,7 @@
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(536, 194);
+            this.ClientSize = new System.Drawing.Size(536, 195);
             this.Controls.Add(this.statusStrip1);
             this.Controls.Add(this.DeadBandSettingsGroupBox);
             this.MaximumSize = new System.Drawing.Size(552, 233);
