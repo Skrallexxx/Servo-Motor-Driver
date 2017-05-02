@@ -1,35 +1,39 @@
-﻿using System.IO.Ports;
+﻿using System;
+using System.Collections.Generic;
+using System.IO.Ports;
 using System.Threading;
 
 namespace ServoMotorDriver {
     public partial class MainInterface {
         public class Communications {
             // Received inputs and outgoing outputs
-            public static int decoderHigh = 0, decoderLow = 0, dacCurrentValue = 0;
-            public static byte[] Inputs = new byte[4];
-            public static byte[] Outputs = new byte[4];
+            public static byte dacCurrentValue = 0;
 
             // Communication Variables
-            public const byte decoderHighPort = 0, decoderLowPort = 1, DACPort = 2, DACCheckPort = 3, decoderRSTPort = 4;
-            public const byte START = 255, REQ = 0;
+            public const byte START = 0x7E, PAD = 0x7D, END = 0x7E;
+            public const byte cmdReadDecoder = 0x01, cmdRstDecoder = 0x02, cmdSetDAC = 0x03, cmdReadDAC = 0x04;
+            static byte cmdByte = 0, lenByte1 = 0, lenByte2 = 0, checkByte1 = 0, checkByte2 = 0;
+
+            // References
+            static SerialPort serial = instance.SerialComPort;
 
             // Attempts to open the serial port communication on the given com port. Can reopen if already open
             public static void TryOpenSerialCommunication(string portName, bool reOpen = false) {
                 // Check if the bluetooth has been connected
-                if (instance.SerialComPort.PortName == portName && instance.SerialComPort.IsOpen) {
+                if (serial.PortName == portName && serial.IsOpen) {
                     instance.WriteMessage("Communication is already established on the selected COM port");
                     return;
                 }
-                if (reOpen = true && instance.SerialComPort.IsOpen)
-                    instance.SerialComPort.Close();
-                if (!instance.SerialComPort.IsOpen) {
+                if (reOpen = true && serial.IsOpen)
+                    serial.Close();
+                if (!serial.IsOpen) {
                     if (portName.Length == 0)
                         return;
-                    instance.SerialComPort.PortName = portName;
+                    serial.PortName = portName;
                     try {
                         //Try to connect to the bluetooth
                         instance.WriteMessage("Attempting to open communication on " + portName);
-                        instance.SerialComPort.Open();
+                        serial.Open();
                         instance.WriteMessage("Communication successfully opened on " + portName);
                     }
                     catch {
@@ -39,61 +43,95 @@ namespace ServoMotorDriver {
                 }
             }
 
-            // Reads the incoming data from the arduino
-            public static void ReadIncomingData() {
-                if (!instance.SerialComPort.IsOpen) return;
+            public static KeyValuePair<Int32, Int16> ReadDecoder() {
+                SendOutgoingData(cmdReadDecoder, 1, new byte[] { 0 });
 
-                // Send an update request for incoming values
-                SendOutgoingData(decoderHighPort, REQ);
-                SendOutgoingData(decoderLowPort, REQ);
-                SendOutgoingData(DACCheckPort, REQ);
-
-                while (instance.SerialComPort.BytesToRead >= 4) {
-                    Inputs[0] = (byte)instance.SerialComPort.ReadByte();
-                    if (Inputs[0] != START) return;
-                    Inputs[1] = (byte)instance.SerialComPort.ReadByte();
-                    Inputs[2] = (byte)instance.SerialComPort.ReadByte();
-                    Inputs[3] = (byte)instance.SerialComPort.ReadByte();
-
-                    byte checksum = (byte)(Inputs[0] + Inputs[1] + Inputs[2]);
-                    if (Inputs[3] != checksum) {
-                        instance.WriteError("Received invalid data packet");
-                        return;
+                byte[] decoderBytes = Read(cmdReadDecoder);
+                if(decoderBytes != null) {
+                    if (decoderBytes.Length == 6) {
+                        KeyValuePair<Int32, Int16> decoder = new KeyValuePair<Int32, Int16>((decoderBytes[0] << 24) | (decoderBytes[1] << 16) | (decoderBytes[2] << 8) | decoderBytes[3], (Int16)((decoderBytes[4] << 8) | decoderBytes[5]));
+                        return decoder;
                     }
-
-                    if (Inputs[1] == decoderHighPort) {
-                        decoderHigh = Inputs[2];
-                    }
-                    else if (Inputs[1] == decoderLowPort) {
-                        decoderLow = Inputs[2];
-                    }
-                    else if (Inputs[1] == DACCheckPort) {
-                        dacCurrentValue = Inputs[2];
-                        instance.CurrentBinaryTextBox.Text = dacCurrentValue.ToString();
-                        instance.CurrentVoltageTextBox.Text = instance.CalculateVoltageFromBinary(dacCurrentValue).ToString();
-                    }
-                    else if (Inputs[1] == decoderRSTPort) {
-                        if (Inputs[2] == (byte)(1))
-                            Interlocked.Add(ref instance.totalPosAtomic, 20000);
-                        if (Inputs[2] == (byte)(2))
-                            Interlocked.Add(ref instance.totalPosAtomic, -20000);
-                    }
-                    else instance.WriteError("Received invalid PORT byte " + Inputs[2]);
                 }
+
+                return new KeyValuePair<int, short>(0, 0);
             }
 
-            // Send the outgoing data to the arduino
-            public static void SendOutgoingData(byte PORT, byte DATA) {
-                Outputs[0] = START;
-                Outputs[1] = PORT;
-                Outputs[2] = DATA;
-                Outputs[3] = (byte)(START + PORT + DATA);
-                if (!instance.SerialComPort.IsOpen) return;
-                instance.SerialComPort.Write(Outputs, 0, 4);
+            public static byte ReadDAC() {
+                SendOutgoingData(cmdReadDAC, 1, new byte[] { 0 });
+
+                byte[] dacByte = Read(cmdReadDAC);
+                if(dacByte != null) {
+                    if(dacByte.Length == 1) {
+                        return dacByte[0];
+                    }
+
+                }
+                return 0;
+            }
+
+            public static byte[] Read(byte CMD) {
+                if (!serial.IsOpen) TryOpenSerialCommunication(serial.PortName);
+
+                if (serial.BytesToRead >= 8) {
+                    Int16 checkSum = 0;
+                    if (serial.ReadByte() != START) return null;
+                    cmdByte = (byte)serial.ReadByte();
+                    lenByte1 = (byte)serial.ReadByte();
+
+                    byte[] dataBytes = new byte[lenByte1];
+
+                    for (int i = 0; i < lenByte1; i++) {
+                        dataBytes[i] = (byte)serial.ReadByte();
+                        checkSum += dataBytes[i];
+                    }
+
+                    lenByte2 = (byte)serial.ReadByte();
+                    checkByte1 = (byte)serial.ReadByte();
+                    checkByte2 = (byte)serial.ReadByte();
+                    if (serial.ReadByte() != END) return null;
+                    if (lenByte1 != lenByte2) return null;
+
+                    checkSum += (byte)(cmdByte + lenByte1 + lenByte2);
+                    Int16 receivedCheckSum = (Int16)((checkByte1 << 8) | checkByte2);
+                    if (checkSum != receivedCheckSum) {
+                        instance.WriteError("Received invalid checksum");
+                        return null;
+                    }
+
+                    if (cmdByte == CMD) {
+                        return dataBytes;
+                    }
+                    else {
+                        instance.WriteError("Received invalid CMD byte " + cmdByte);
+                        return null;
+                    }
+                }
+                return null;
+            }
+
+            public static void SendOutgoingData(byte CMD, byte LEN, byte[] DATA) {
+                if (!serial.IsOpen) TryOpenSerialCommunication(serial.PortName);
+
+                byte[] bytesToWrite = new byte[7 + LEN];
+                bytesToWrite[0] = START; bytesToWrite[1] = CMD; bytesToWrite[2] = LEN;
+
+                Int16 checkSum = 0;
+
+                for(int i = 0; i < LEN; i++) {
+                    bytesToWrite[3 + i] = DATA[i];
+                    checkSum += DATA[i];
+                }
+
+                checkSum += (Int16)(CMD + LEN + LEN);
+                bytesToWrite[3 + LEN] = LEN; bytesToWrite[4 + LEN] = (byte)(checkSum >> 8); bytesToWrite[5 + LEN] = (byte)(checkSum); bytesToWrite[6 + LEN] = END;
+                serial.Write(bytesToWrite, 0, 7 + LEN);
             }
 
             public static void SendResetCommand() {
-                SendOutgoingData(decoderRSTPort, 0);
+                if (serial.BytesToWrite > 0)
+                    serial.DiscardOutBuffer();
+                SendOutgoingData(cmdRstDecoder, 1, new byte[] { 0 });
             }
         }
     }

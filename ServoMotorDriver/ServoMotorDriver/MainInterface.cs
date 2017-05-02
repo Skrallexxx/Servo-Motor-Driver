@@ -16,12 +16,26 @@ namespace ServoMotorDriver {
         public static bool realtimeDataSettingsOpen = false;
         public static bool graphingOpen = false;
 
+        // Threading
+        Thread commsThread;
+        Thread testDataThread;
+        Thread velocityThread;
+        Thread accelerationThread;
+
+        // Sub-Forms
+        TestDataSettingsForm testDataSettings = null;
+        DeadBandSettingsForm deadbandSettings = null;
+        RealtimeDataSettingsForm realtimeDataSettings = null;
+        GraphingForm graphs = null;
+
         #region Variables and Control/Communication Properties
         // Tuning and Deadband Variables
         public decimal binaryMax = 255, binaryMin = 5;
 
         // Decoder Position Variables
+        public KeyValuePair<Int32, Int16> decoderValue;
         public Int16 currentPos = 0;
+        public Int16 lastPos = 0;
         public int currentPosAtomic = 0;
         public int currentRotationPos = 0;
         public Int64 totalPos = 0;
@@ -61,18 +75,6 @@ namespace ServoMotorDriver {
         // DAC Object, stores Binary <> Voltage Gradient and Intercept
         private DAC dac1 = new DAC(0.1206m, -15.697m);
 
-        // Threading
-        Thread testDataThread;
-        Thread velocityThread;
-        Thread accelerationThread;
-        Thread plottingThread;
-
-        // Sub-Forms
-        TestDataSettingsForm testDataSettings = null;
-        DeadBandSettingsForm deadbandSettings = null;
-        RealtimeDataSettingsForm realtimeDataSettings = null;
-        GraphingForm graphs = null;
-
         #endregion
 
         #region Interface Intialization
@@ -83,6 +85,9 @@ namespace ServoMotorDriver {
             instance = this;
 
             uptimeSW.Start();
+
+            commsThread = new Thread(new ThreadStart(Communicate));
+            commsThread.Start();
 
             // Start the test data thread to incremement data without affecting GUI performance
             testDataThread = new Thread(new ThreadStart(IncrementTestData));
@@ -95,9 +100,6 @@ namespace ServoMotorDriver {
             // Start the acceleration sampling thread
             accelerationThread = new Thread(new ThreadStart(CalculateAcceleration));
             accelerationThread.Start();
-
-            plottingThread = new Thread(new ThreadStart(PlotData));
-            plottingThread.Start();
 
             // Add the MODE enums to the dropdown mode selection box
             foreach (ControlEnums.MODE mode in Enum.GetValues(typeof(ControlEnums.MODE)))
@@ -178,40 +180,15 @@ namespace ServoMotorDriver {
 
         // Send-Recieve method, runs every 10 ticks
         private void ProgramLoop(object sender, EventArgs e) {
-            if (!SerialComPort.IsOpen && ComPortSelectionBox.Items.Count > 0)
-                Communications.TryOpenSerialCommunication(ComPortSelectionBox.SelectedItem.ToString());
-
-            // Modify current position dependent on current data mode
-            if (currentDataMode == ControlEnums.DATAMODE.DECODER)
-                Communications.ReadIncomingData();
-            if (currentDataMode == ControlEnums.DATAMODE.TEST || currentDataMode == ControlEnums.DATAMODE.TESTRAND)
-                currentPos = (Int16)currentPosAtomic;
-
-            // Calculate low and high bytes if not in decoder mode
-            if (currentDataMode != ControlEnums.DATAMODE.DECODER) {
-                Communications.decoderHigh = (byte)(currentPos >> 8);
-                Communications.decoderLow = (byte)(currentPos);
-            }
-
-            // Assemble 2 bytes into 16bit integer and determine current rotation position
-            currentPos = (Int16)((Communications.decoderHigh << 8) | Communications.decoderLow);
+            currentPos = decoderValue.Value;
             currentRotationPos = (Int16)(currentPos % 2000);
+            totalPos += (currentPos - lastPos);
 
-            if (currentPos >= 20000 || currentPos <= -20000) {
-                Communications.SendResetCommand();
-                totalPosAtomic += currentPos;
-            }
-
-            // Reset currentPos after 10 rotations in either direction
-            if (currentDataMode != ControlEnums.DATAMODE.DECODER && (currentPos >= 20000 || currentPos <= -20000)) {
-                totalPos += currentPos;
-                currentPos = 0;
-            }
-            totalPos = totalPosAtomic;
+            lastPos = currentPos;
 
             // Write low byte, high byte and position values to the interface
-            HighByteTextBox.Text = Communications.decoderHigh.ToString();
-            LowByteTextBox.Text = Communications.decoderLow.ToString();
+            HighByteTextBox.Text = ((byte)(decoderValue.Value >> 8)).ToString();
+            LowByteTextBox.Text = ((byte)(decoderValue.Value)).ToString();
             PositionIntegerUpDown.Value = currentPos;
 
             // Calculate current position (in deg, rad, counts or revs) and write to the interface
@@ -224,57 +201,48 @@ namespace ServoMotorDriver {
             CurrentAccelerationTextBox.Text = CalculateAccelerationDisplay();
 
             // Send data to the graphs
-
+            if (graphingOpen && graphs != null)
+                graphs.AddGraphingEntry(new GraphingDataEntry(uptimeSW.ElapsedMilliseconds).setVoltage((double)CalculateVoltageFromBinary(Communications.dacCurrentValue))
+                                                                                       .setBinary(Communications.dacCurrentValue)
+                                                                                       .setPosition(totalPos).setRotationPosition(currentRotationPos).setVelocity(velocity)
+                                                                                       .setAcceleration(acceleration));
 
             // Draw the motor visualisation circle
             drawCirclePlot();
-
-            /*
-
-            currentRotationPos = (Int16)(currentPos % 2000);
-
-            textBox1.Text = decoderHigh.ToString();
-            textBox2.Text = decoderLow.ToString();
-            textBox3.Text = ((Int16)((decoderHigh << 8) | decoderLow)).ToString();
-
-            AddPositionPointToChart((double)uptimeSW.ElapsedMilliseconds, Double.Parse(textBox3.Text));
-
-            if(positionPoints.Count > 4) {
-                List<DataPoint> pastPositionPoints = GetPastPositionPoints(5);
-                double overallPositionChange = 0;
-
-                for(int i = 0; i < pastPositionPoints.Count - 2; i++) {
-                    overallPositionChange += pastPositionPoints[i + 1].YValues[0] - pastPositionPoints[i].YValues[0];
-                }
-
-                double velocity = overallPositionChange / (pastPositionPoints[pastPositionPoints.Count - 1].XValue - pastPositionPoints[0].XValue);
-                AddVelocityPointToChart((double)uptimeSW.ElapsedMilliseconds, velocity);
-            }
-
-            if(velocityPoints.Count > 4) {
-                List<DataPoint> pastVelocityPoints = GetPastVelocityPoints(5);
-                double overallVelocityChange = 0;
-
-                for(int i = 0; i < pastVelocityPoints.Count - 2; i++) {
-                    overallVelocityChange += pastVelocityPoints[i + 1].YValues[0] - pastVelocityPoints[i].YValues[0];
-                }
-                double acceleration = overallVelocityChange / (pastVelocityPoints[pastVelocityPoints.Count - 1].XValue - pastVelocityPoints[0].XValue);
-                AddAccelerationPointToChart((double)uptimeSW.ElapsedMilliseconds, acceleration);
-            }
-
-            SetChartXAxesMaximums();
-            chart1.Update();
-            chart2.Update();
-            chart3.Update();
-
-            drawCirclePlot();
-
-            */
         }
 
         #endregion
 
         #region Threaded Methods
+        public void Communicate() {
+            while (true) {
+                if (currentDataMode == ControlEnums.DATAMODE.DECODER) {
+                    decoderValue = Communications.ReadDecoder();
+                }
+                else if (currentDataMode == ControlEnums.DATAMODE.TEST || currentDataMode == ControlEnums.DATAMODE.TESTRAND) {
+                    currentPos = (Int16)currentPosAtomic;
+                }
+
+                // Calculate low and high bytes if not in decoder mode
+                if (currentDataMode != ControlEnums.DATAMODE.DECODER) {
+                    decoderValue = new KeyValuePair<int, short>(0, currentPos);
+                }
+
+                if (currentPos >= 20000) {
+                    Communications.SendResetCommand();
+                    lastPos = 0;
+                    decoderValue = new KeyValuePair<int, short>(0, 0);
+                }
+                else if (currentPos <= -20000) {
+                    Communications.SendResetCommand();
+                    lastPos = 0;
+                    decoderValue = new KeyValuePair<int, short>(0, 0);
+                }
+
+                Thread.Sleep(10);
+            }
+        }
+
         // Increments the test data (with randomness if in random mode). Runs in a separate thread.
         public void IncrementTestData() {
             Stopwatch uptimeSW = Stopwatch.StartNew();
@@ -283,6 +251,8 @@ namespace ServoMotorDriver {
             while (true) {
                 while (currentDataMode == ControlEnums.DATAMODE.TEST || currentDataMode == ControlEnums.DATAMODE.TESTRAND) {
                     if (uptimeSW.ElapsedMilliseconds - currentUptime >= TestDataSettingsForm.interval) {
+                        Int16 decoderVal = decoderValue.Value;
+                        decoderValue = new KeyValuePair<int, short>(TestDataSettingsForm.interval, decoderVal);
                         currentUptime = uptimeSW.ElapsedMilliseconds;
 
                         if (currentDataMode == ControlEnums.DATAMODE.TESTRAND)
@@ -304,26 +274,27 @@ namespace ServoMotorDriver {
 
         // Calculates the velocity over a certain number of samples (and sample-period). Runs in a separate thread to more easily configure sample period
         public void CalculateVelocity() {
-            Stopwatch positionSW = Stopwatch.StartNew();
-            List<Int64> lastPositions = new List<Int64>();
-            int lastPositionsIndex = 0;
+            List<KeyValuePair<Int64, Int32>> lastPositions = new List<KeyValuePair<Int64, Int32>>();
+            Int64 lastPosition = 0;
 
             while(true) {
-                lastPositions.Insert(lastPositionsIndex, totalPos + currentPos);
-                lastPositionsIndex++;
-                if (lastPositionsIndex >= RealtimeDataSettingsForm.velocitySamples) {
-                    lastPositionsIndex = 0;
-                    positionSW.Stop();
-
-                    //double avgPositionChange = (lastPositions[RealtimeDataSettingsForm.velocitySamples - 1] - lastPositions[0]) / (double)RealtimeDataSettingsForm.velocitySamples;
-                    double avgPositionChange = 0.0;
-                    for (int i = 0; i < RealtimeDataSettingsForm.velocitySamples - 1; i++ ) {
-                        avgPositionChange += lastPositions[i+1] - lastPositions[i];
+                lastPositions.Add(new KeyValuePair<Int64, Int32>(totalPos, decoderValue.Key));
+                if (lastPositions.Count >= RealtimeDataSettingsForm.velocitySamples) {
+                    List<Double> velocities = new List<Double>();
+                    foreach(KeyValuePair<Int64, Int32> pair in lastPositions) {
+                        if(pair.Value != 0) 
+                            velocities.Add((double)((pair.Key - lastPosition) / (pair.Value / 1000.0)));
+                        lastPosition = pair.Key;
                     }
-                    avgPositionChange /= (double)RealtimeDataSettingsForm.velocitySamples;
 
-                    Interlocked.Exchange(ref velocity, avgPositionChange * RealtimeDataSettingsForm.velocitySamples / (positionSW.ElapsedMilliseconds / 1000.0));
-                    positionSW.Restart();
+                    Double avgVelocity = 0.0;
+                    foreach(Double velocity in velocities) {
+                        avgVelocity += velocity;
+                    }
+
+                    avgVelocity /= (double)RealtimeDataSettingsForm.velocitySamples;
+                    Interlocked.Exchange(ref velocity, avgVelocity);
+                    lastPositions = new List<KeyValuePair<Int64, Int32>>();
                 }
                 Thread.Sleep(RealtimeDataSettingsForm.velocityPeriod);
             }
@@ -351,17 +322,6 @@ namespace ServoMotorDriver {
                     accelerationSW.Restart();
                 }
                 Thread.Sleep(RealtimeDataSettingsForm.accelerationPeriod);
-            }
-        }
-
-        public void PlotData() {
-            while(true) {
-                if (graphingOpen && graphs != null)
-                    graphs.AddGraphingEntry(new GraphingDataEntry(uptimeSW.ElapsedMilliseconds).setVoltage((double)CalculateVoltageFromBinary(Communications.dacCurrentValue))
-                                                                                           .setBinary(Communications.dacCurrentValue)
-                                                                                           .setPosition(totalPos + currentPos).setRotationPosition(currentRotationPos).setVelocity(velocity)
-                                                                                           .setAcceleration(acceleration));
-                Thread.Sleep(33); 
             }
         }
 
@@ -458,7 +418,7 @@ namespace ServoMotorDriver {
             }
 
             VoltageControlVoltageUpDown.Value = CalculateVoltageFromBinary(RawControlUpDown.Value);
-            Communications.SendOutgoingData(Communications.DACPort, compensated);
+            Communications.SendOutgoingData(Communications.cmdSetDAC, 1, new byte[] { compensated });
             RawVoltageTextBox.Text = CalculateVoltageFromBinary(compensated).ToString();
         }
 
@@ -522,10 +482,10 @@ namespace ServoMotorDriver {
 
         // Called when the form is closed, aborts the testDataThread to prevent it from continuing
         private void OnFormClosed(object sender, FormClosedEventArgs e) {
+            commsThread.Abort();
             testDataThread.Abort();
             velocityThread.Abort();
             accelerationThread.Abort();
-            plottingThread.Abort();
 
             // Close any still-open subforms
             if(testDataSettings != null || testDataSettingsOpen)
@@ -558,13 +518,13 @@ namespace ServoMotorDriver {
         // Calculates the Position value to display for the currently selected position unit
         public string CalculatePositionDisplay() {
             if (currentPositionUnit == ControlEnums.POSITIONUNITS.COUNTS)
-                return (totalPos + currentPos).ToString();
+                return totalPos.ToString();
             if (currentPositionUnit == ControlEnums.POSITIONUNITS.DEG)
                 return Math.Round((360.0 * (double)(currentRotationPos / 2000.0)), 2).ToString();
             if (currentPositionUnit == ControlEnums.POSITIONUNITS.RAD)
                 return Math.Round(2.0 * (double)(currentRotationPos / 2000.0), 2) + " π";
             if (currentPositionUnit == ControlEnums.POSITIONUNITS.REVS)
-                return Math.Round(((totalPos + currentPos) / 2000.0), 2).ToString();
+                return Math.Round(((totalPos) / 2000.0), 2).ToString();
             return "0";
         }
 

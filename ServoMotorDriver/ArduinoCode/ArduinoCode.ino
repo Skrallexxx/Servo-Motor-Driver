@@ -7,19 +7,25 @@ Author:	Alex
 const int SEL = 37, OE = 36, RST = 35;
 
 // Output & Input Variables
-byte dacValue = 255;
+byte dacValue = 137;
 byte decoderHigh = 0, decoderLow = 0;
 
-// Communication Variables
-byte checksum = 0;
-byte startByte = 0, portByte = 0, dataByte = 0, checkByte = 0;
-const byte START = 255, REQ = 0;
-const byte DecoderHighPort = 0, DecoderLowPort = 1, DACPort = 2, DACCheckPort = 3, DecoderRSTPort = 4;
+// Communication constants
+const byte START = 0x7E, PAD = 0x7D, END = 0x7E;
+
+// Communication command constants
+const byte cmdReadDecoder = 0x01, cmdRstDecoder = 0x02, cmdSetDAC = 0x03, cmdReadDAC = 0x04;
+
+// Communication storage variables
+byte cmdByte = 0; // The received communication command (see command constants above)
+byte lenByte1 = 0, lenByte2 = 0; // Received length of the communication frame
+byte checkByte1 = 0, checkByte2 = 0; // The received check bytes
 
 // Decoder Polling Variables
 int deltaT = 1000; // Time period to read in microseconds
 int64_t oldMicros = 0;
-int32_t tempData = 0;
+int64_t oldMillis = 0;
+int32_t dataValue = 0;
 
 // the setup function runs once when you press reset or power the board
 void setup() {
@@ -34,76 +40,77 @@ void setup() {
 void loop() {
 	if (!Serial)
 		Serial.begin(115200);
-  /*
-	if (checkTime(deltaT)) {
-		ReadDecoderBytes();
-		//tempData += 1;
-	}
-
-  tempData = (int32_t)((int16_t)((bitFlip(decoderHigh) << 8) | bitFlip(decoderLow)));
-
-	if (tempData >= 20000 || tempData <= -20000) {
-		if (tempData >= 20000)
-			SendOutgoingData(DecoderRSTPort, (byte)1);
-		else if (tempData <= -20000)
-			SendOutgoingData(DecoderRSTPort, (byte)2);
-		tempData = 0;
-    digitalWrite(RST, LOW);
-    delay(2);
-    digitalWrite(RST, HIGH);
-	}
-  */
   
-	while (Serial.available() >= 4) {
-		startByte = Serial.read();
+	if (checkTime(deltaT)) {
+		//ReadDecoderBytes();
+		dataValue += 10;
+	}
+	
+	while (Serial.available() >= 8) {
+		int16_t checkSum = 0;
+		if (Serial.read() != START) return;
+		cmdByte = Serial.read();
+		lenByte1 = Serial.read();
 
-		if (startByte != START) return;
-		portByte = Serial.read();
-		dataByte = Serial.read();
-		checkByte = Serial.read();
-		checksum = startByte + portByte + dataByte;
+		byte* dataBytes = new byte[lenByte1];
 
-		if (checkByte != checksum) return;
+		for (int i = 0; i < lenByte1; i++) {
+			dataBytes[i] = Serial.read();
+			checkSum += dataBytes[i];
+		}
 
-		// Request for Decoder Port A data received, read the port and send data
-    if(portByte == DecoderHighPort || portByte == DecoderLowPort) {
-      ReadDecoderBytes();
+		lenByte2 = Serial.read();
+		checkByte1 = Serial.read();
+		checkByte2 = Serial.read();
+		if (Serial.read() != END) return;
+		if (lenByte1 != lenByte2) return;
+
+		checkSum += cmdByte + lenByte1 + lenByte2;
+		int16_t receivedCheckSum = (int16_t)((checkByte1 << 8) | checkByte2);
+		if (checkSum != receivedCheckSum) return;
+
+    if(cmdByte == cmdReadDecoder) {
+        unsigned long timeStamp = 0;
+        timeStamp = ReadDecoderBytes();
+        byte bytes[] = { (byte)(timeStamp >> 24), (byte)(timeStamp >> 16), (byte)(timeStamp >> 8), (byte)(timeStamp), (byte)(dataValue >> 8), (byte)(dataValue) };
+        SendOutgoingData(cmdReadDecoder, 6, bytes);
     }
-    
-		if (portByte == DecoderHighPort) {
-			SendOutgoingData(DecoderHighPort, bitFlip(decoderHigh));
-			//SendOutgoingData(DecoderHighPort, (byte)(tempData >> 8));
-		}
-
-		// Request for Decoder Port B data received, read the port and send data
-		if (portByte == DecoderLowPort) {
-			SendOutgoingData(DecoderLowPort, bitFlip(decoderLow));
-			//SendOutgoingData(DecoderLowPort, (byte)(tempData));
-		}
-
-		// DAC data received, write it to the DAC port
-		if (portByte == DACPort) {
-			dacValue = dataByte;
-			PORTA = dacValue;
-		}
-
-		if (portByte == DACCheckPort) {
-			SendOutgoingData(DACCheckPort, dacValue);
-		}
-
-    if(portByte == DecoderRSTPort) {
-      digitalWrite(RST, LOW);
-      delay(2);
-      digitalWrite(RST, HIGH);
+    else if(cmdByte == cmdRstDecoder) {
+        dataValue = 0;
+        digitalWrite(RST, LOW);
+        delay(2);
+        digitalWrite(RST, HIGH);
+        byte bytes[] = {100};
     }
+    else if (cmdByte == cmdSetDAC) {
+        dacValue = dataBytes[0];
+        PORTA = dacValue;
+    }
+    else if (cmdByte == cmdReadDAC) {
+        byte bytes[] = { dacValue };
+        SendOutgoingData(cmdReadDAC, 1, bytes);
+    }
+
+    delete(dataBytes);
 	}
 }
 
-void SendOutgoingData(byte PORT, byte DATA) {
-	Serial.write(START);
-	Serial.write(PORT);
-	Serial.write(DATA);
-	Serial.write((byte)(START + PORT + DATA));
+void SendOutgoingData(byte CMD, byte LEN, byte DATA[]) {
+  byte* bytesToWrite = new byte[7 + LEN];
+  bytesToWrite[0] = START; bytesToWrite[1] = CMD; bytesToWrite[2] = LEN;
+  
+	int16_t checkSum = 0;
+
+	for (int i = 0; i < LEN; i++) {
+		//Serial.write(DATA[i]);
+    bytesToWrite[3 + i] = DATA[i];
+		checkSum += DATA[i];
+	}
+
+	checkSum += CMD + LEN + LEN;
+  bytesToWrite[3 + LEN] = LEN; bytesToWrite[4 + LEN] = (byte)(checkSum >> 8); bytesToWrite[5 + LEN] = (byte)checkSum; bytesToWrite[6 + LEN] = END;
+  Serial.write(bytesToWrite, 7 + LEN);
+  delete(bytesToWrite);
 }
 
 bool checkTime(int32_t timeChange) {
@@ -114,17 +121,24 @@ bool checkTime(int32_t timeChange) {
 	return false;
 }
 
-void ReadDecoderBytes() {
+unsigned long ReadDecoderBytes() {
+  int64_t timeDiff = millis() - oldMillis;
+  oldMillis = millis();
 	digitalWrite(SEL, LOW);
 	digitalWrite(OE, LOW);
-  delay(2);
+
+	delay(2);
 	decoderHigh = PINF;
-  delay(2);
+
+	delay(2);
 	digitalWrite(SEL, HIGH);
-  delay(2);
+
+	delay(2);
 	decoderLow = PINF;
-  delay(2);
+
+	delay(2);
 	digitalWrite(OE, HIGH);
+	return (int32_t)timeDiff;
 }
 
 byte bitFlip(byte value) {

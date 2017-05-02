@@ -112,15 +112,16 @@ namespace ServoMotorDriver {
 
         // Called when the start button is clicked, starts testing for the deadband range
         private void OnStartButtonClick(object sender, EventArgs e) {
+            Int64 totalPos1 = instance.totalPos;
             BinaryTextBox.Text = instance.CalculateBinaryFromVoltage(comms.dacCurrentValue).ToString();
-            PositionTextBox.Text = (instance.totalPos + instance.currentPos).ToString();
+            PositionTextBox.Text = totalPos1.ToString();
 
             TestingStartButton.Enabled = false;
             SaveButton.Enabled = false;
             LoadButton.Enabled = false;
             TestingStopButton.Enabled = true;
 
-            comms.SendOutgoingData(comms.DACPort, instance.CalculateBinaryFromVoltage(0m));
+            comms.SendOutgoingData(comms.cmdSetDAC, 1, new byte[] { instance.CalculateBinaryFromVoltage(0m) });
 
             deadbandTestRunning = true;
             deadbandTestThread = new Thread(new ThreadStart(StartDeadbandTest));
@@ -201,7 +202,7 @@ namespace ServoMotorDriver {
         // Begins the automatic testing for the deadband range
         public void StartDeadbandTest() {
             Stopwatch sw = Stopwatch.StartNew();
-            Int64 startPos = instance.totalPos + instance.currentPos;
+            Int64 startPos = instance.totalPos;
             int binaryVal = instance.CalculateBinaryFromVoltage(0m);
 
             // Testing configuration variables. Potentially move to interface if necessary
@@ -211,26 +212,26 @@ namespace ServoMotorDriver {
             Console.Write("deadband test thread started");
 
             // Determine maximum deadband binary value
-            while (binaryVal < 255 && (instance.totalPos + instance.currentPos) <= startPos + 1000) {
+            while (binaryVal < 255 && instance.totalPos <= (startPos + 1000)) {
                 toolStripStatusLabel1.Text = "Stage 1/2";
                 binaryVal += interval;
-                startPos = instance.totalPos + instance.currentPos;
-                comms.SendOutgoingData(comms.DACPort, (byte)binaryVal);
+                startPos = instance.totalPos;
+                comms.SendOutgoingData(comms.cmdSetDAC, 1, new byte[] { (byte)binaryVal });
                 Invoke((Action)delegate () { UpdateControls(binaryVal); });
                 Thread.Sleep(sleepTime);
             }
 
             // Reset some values for the reverse deadband test
-            startPos = instance.totalPos + instance.currentPos;
+            startPos = instance.totalPos;
             binaryVal = instance.CalculateBinaryFromVoltage(0m);
-            comms.SendOutgoingData(comms.DACPort, (byte)binaryVal);
+            comms.SendOutgoingData(comms.cmdSetDAC, 1, new byte[] { (byte)binaryVal});
 
             // Determine minimum deadband binary value
-            while(binaryVal > 0 && (instance.totalPos + instance.currentPos) >= startPos - 1000) {
+            while(binaryVal > 0 && instance.totalPos >= (startPos - 1000)) {
                 toolStripStatusLabel1.Text = "Stage 2/2";
                 binaryVal -= interval;
-                startPos = instance.totalPos + instance.currentPos;
-                comms.SendOutgoingData(comms.DACPort, (byte)binaryVal);
+                startPos = instance.totalPos;
+                comms.SendOutgoingData(comms.cmdSetDAC, 1, new byte[] { (byte)binaryVal });
                 Invoke((Action)delegate() { UpdateControls(binaryVal); });
                 Thread.Sleep(sleepTime);
             }
@@ -243,8 +244,9 @@ namespace ServoMotorDriver {
 
         // Updates the interface controls, called from the testing thread in order to maintain thread safety
         private void UpdateControls(int binaryValue) {
+            Int64 totalPos1 = instance.totalPos;
             BinaryTextBox.Text = binaryValue.ToString();
-            PositionTextBox.Text = (instance.totalPos + instance.currentPos).ToString();
+            PositionTextBox.Text = totalPos1.ToString();
 
             // Deadband test is running and testing the max value
             if (deadbandTestRunning && binaryValue >= instance.CalculateBinaryFromVoltage(0m)) {
