@@ -5,7 +5,6 @@ using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Collections.Generic;
-using System.Windows.Forms.DataVisualization.Charting;
 using System.Threading;
 
 namespace ServoMotorDriver {
@@ -284,7 +283,7 @@ namespace ServoMotorDriver {
             if (totalPos != lastTotalPos) {
                 lastPositions.Add(new KeyValuePair<Int64, Int32>(totalPos, decoderValue.Key));
                 if (lastPositions.Count >= RealtimeDataSettingsForm.velocitySamples) {
-                    List<KeyValuePair<Double, Int32>> velocities = new List<KeyValuePair<Double, Int32>>();
+                    List<Double> velocities = new List<Double>();
                     foreach (KeyValuePair<Int64, Int32> pair in lastPositions) {
                         if (pair.Value != 0)
                             velocities.Add(((pair.Key - lastPosition) / (pair.Value / 1000.0)));

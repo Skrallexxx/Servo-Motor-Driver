@@ -1,19 +1,13 @@
 ﻿using LiveCharts;
 using LiveCharts.Configurations;
 using LiveCharts.Wpf;
+using LiveCharts.Geared;
 using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace ServoMotorDriver {
     public partial class GraphingForm : Form {
-        public ChartValues<GraphingDataEntry> chartValues = new ChartValues<GraphingDataEntry>();
+        public GearedValues<GraphingDataEntry> chartValues = new GearedValues<GraphingDataEntry>();
         CartesianMapper<GraphingDataEntry> mapper = Mappers.Xy<GraphingDataEntry>();
 
         public ControlEnums.AXISOPTIONS currentXAxis = ControlEnums.AXISOPTIONS.TIME;
@@ -42,11 +36,12 @@ namespace ServoMotorDriver {
             Chart.DisableAnimations = true;
             Chart.Hoverable = false;
             Chart.DataTooltip = null;
+            chartValues.WithQuality(Quality.High);
         }
 
         public void AddGraphingEntry(GraphingDataEntry entry) {
             chartValues.Add(entry);
-            if (chartValues.Count > 330) chartValues.RemoveAt(0);
+            if (chartValues.Count > 1200) chartValues.RemoveAt(0);
         }
 
         #region Interface Helper Methods
