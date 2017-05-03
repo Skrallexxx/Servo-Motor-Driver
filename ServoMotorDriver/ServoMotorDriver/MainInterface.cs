@@ -19,8 +19,6 @@ namespace ServoMotorDriver {
         // Threading
         Thread commsThread;
         Thread testDataThread;
-        Thread velocityThread;
-        Thread accelerationThread;
 
         // Sub-Forms
         TestDataSettingsForm testDataSettings = null;
@@ -40,6 +38,12 @@ namespace ServoMotorDriver {
         public int currentRotationPos = 0;
         public Int64 totalPos = 0;
         public Int64 totalPosAtomic = 0;
+        public Int64 lastTotalPos = 0;
+
+        List<KeyValuePair<Int64, Int32>> lastPositions = new List<KeyValuePair<Int64, Int32>>();
+        KeyValuePair<Int64, Int32> previousPosition = new KeyValuePair<Int64, Int32>();
+        List<Double> lastVelocities = new List<Double>();
+        Int64 lastPosition = 0;
 
         // Velocity Variables
         public double velocity = 0;
@@ -86,20 +90,13 @@ namespace ServoMotorDriver {
 
             uptimeSW.Start();
 
+            // Start the communication thread to communicate with the arduino at a specified rate
             commsThread = new Thread(new ThreadStart(Communicate));
             commsThread.Start();
 
             // Start the test data thread to incremement data without affecting GUI performance
             testDataThread = new Thread(new ThreadStart(IncrementTestData));
             testDataThread.Start();
-
-            // Start the velocity sampling thread
-            velocityThread = new Thread(new ThreadStart(CalculateVelocity));
-            velocityThread.Start();
-
-            // Start the acceleration sampling thread
-            accelerationThread = new Thread(new ThreadStart(CalculateAcceleration));
-            accelerationThread.Start();
 
             // Add the MODE enums to the dropdown mode selection box
             foreach (ControlEnums.MODE mode in Enum.GetValues(typeof(ControlEnums.MODE)))
@@ -136,6 +133,7 @@ namespace ServoMotorDriver {
             WriteMessage("Added COM Port Selection Options");
 
             // Establish connection using selected COM port
+            //SerialComPort.Close();
             if (ComPortSelectionBox.Items.Count > 0)
                 Communications.TryOpenSerialCommunication(ComPortSelectionBox.SelectedItem.ToString());
             else WriteError("No Available COM Ports");
@@ -186,6 +184,9 @@ namespace ServoMotorDriver {
 
             lastPos = currentPos;
 
+            CurrentBinaryTextBox.Text = Communications.dacCurrentValue.ToString();
+            CurrentVoltageTextBox.Text = CalculateVoltageFromBinary(Communications.dacCurrentValue).ToString();
+
             // Write low byte, high byte and position values to the interface
             HighByteTextBox.Text = ((byte)(decoderValue.Value >> 8)).ToString();
             LowByteTextBox.Text = ((byte)(decoderValue.Value)).ToString();
@@ -214,31 +215,37 @@ namespace ServoMotorDriver {
         #endregion
 
         #region Threaded Methods
+        // Reads from the arduino at a specified rate
         public void Communicate() {
             while (true) {
-                if (currentDataMode == ControlEnums.DATAMODE.DECODER) {
-                    decoderValue = Communications.ReadDecoder();
-                }
-                else if (currentDataMode == ControlEnums.DATAMODE.TEST || currentDataMode == ControlEnums.DATAMODE.TESTRAND) {
-                    currentPos = (Int16)currentPosAtomic;
-                }
+                if(SerialComPort.IsOpen) {
+                    if (currentDataMode == ControlEnums.DATAMODE.DECODER) {
+                        decoderValue = Communications.ReadDecoder();
+                    }
+                    else if (currentDataMode == ControlEnums.DATAMODE.TEST || currentDataMode == ControlEnums.DATAMODE.TESTRAND) {
+                        currentPos = (Int16)currentPosAtomic;
+                    }
+                    if (currentDataMode != ControlEnums.DATAMODE.DECODER) {
+                        decoderValue = new KeyValuePair<int, short>(0, currentPos);
+                    }
 
-                // Calculate low and high bytes if not in decoder mode
-                if (currentDataMode != ControlEnums.DATAMODE.DECODER) {
-                    decoderValue = new KeyValuePair<int, short>(0, currentPos);
-                }
+                    // Send the reset command if position is not between -20000 and +20000
+                    if (currentPos >= 20000) {
+                        Communications.SendResetCommand();
+                        lastPos = 0;
+                        decoderValue = new KeyValuePair<int, short>(0, 0);
+                    }
+                    else if (currentPos <= -20000) {
+                        Communications.SendResetCommand();
+                        lastPos = 0;
+                        decoderValue = new KeyValuePair<int, short>(0, 0);
+                    }
 
-                if (currentPos >= 20000) {
-                    Communications.SendResetCommand();
-                    lastPos = 0;
-                    decoderValue = new KeyValuePair<int, short>(0, 0);
+                    Communications.dacCurrentValue = Communications.ReadDAC();
                 }
-                else if (currentPos <= -20000) {
-                    Communications.SendResetCommand();
-                    lastPos = 0;
-                    decoderValue = new KeyValuePair<int, short>(0, 0);
-                }
-
+                CalculateVelocity();
+                //velocityThread.Start();
+                //accelerationThread.Start();
                 Thread.Sleep(10);
             }
         }
@@ -250,59 +257,54 @@ namespace ServoMotorDriver {
 
             while (true) {
                 while (currentDataMode == ControlEnums.DATAMODE.TEST || currentDataMode == ControlEnums.DATAMODE.TESTRAND) {
-                    if (uptimeSW.ElapsedMilliseconds - currentUptime >= TestDataSettingsForm.interval) {
-                        Int16 decoderVal = decoderValue.Value;
-                        decoderValue = new KeyValuePair<int, short>(TestDataSettingsForm.interval, decoderVal);
-                        currentUptime = uptimeSW.ElapsedMilliseconds;
+                    Int16 decoderVal = decoderValue.Value;
+                    decoderValue = new KeyValuePair<int, short>(TestDataSettingsForm.interval, decoderVal);
+                    currentUptime = uptimeSW.ElapsedMilliseconds;
 
-                        if (currentDataMode == ControlEnums.DATAMODE.TESTRAND)
-                            Interlocked.Add(ref currentPosAtomic, rand.Next(TestDataSettingsForm.randMinIncrement, TestDataSettingsForm.randMaxIncrement));
-                        else Interlocked.Add(ref currentPosAtomic, TestDataSettingsForm.increment);
+                    if (currentDataMode == ControlEnums.DATAMODE.TESTRAND)
+                        Interlocked.Add(ref currentPosAtomic, rand.Next(TestDataSettingsForm.randMinIncrement, TestDataSettingsForm.randMaxIncrement));
+                    else Interlocked.Add(ref currentPosAtomic, TestDataSettingsForm.increment);
 
-                        if(currentPosAtomic >= 20000) {
-                            Interlocked.Exchange(ref currentPosAtomic, 0);
-                            Interlocked.Add(ref totalPosAtomic, 20000);
-                        }
-                        if(currentPosAtomic <= -20000) {
-                            Interlocked.Exchange(ref currentPosAtomic, 0);
-                            Interlocked.Add(ref totalPosAtomic, -20000);
-                        }
+                    if (currentPosAtomic >= 20000) {
+                        Interlocked.Exchange(ref currentPosAtomic, 0);
+                        Interlocked.Add(ref totalPosAtomic, 20000);
+                    }
+                    if (currentPosAtomic <= -20000) {
+                        Interlocked.Exchange(ref currentPosAtomic, 0);
+                        Interlocked.Add(ref totalPosAtomic, -20000);
                     }
                 }
+
+                Thread.Sleep(TestDataSettingsForm.interval);
             }
         }
 
         // Calculates the velocity over a certain number of samples (and sample-period). Runs in a separate thread to more easily configure sample period
         public void CalculateVelocity() {
-            List<KeyValuePair<Int64, Int32>> lastPositions = new List<KeyValuePair<Int64, Int32>>();
-            Int64 lastPosition = 0;
-
-            while(true) {
+            if (totalPos != lastTotalPos) {
                 lastPositions.Add(new KeyValuePair<Int64, Int32>(totalPos, decoderValue.Key));
                 if (lastPositions.Count >= RealtimeDataSettingsForm.velocitySamples) {
-                    List<Double> velocities = new List<Double>();
-                    foreach(KeyValuePair<Int64, Int32> pair in lastPositions) {
-                        if(pair.Value != 0) 
-                            velocities.Add((double)((pair.Key - lastPosition) / (pair.Value / 1000.0)));
+                    List<KeyValuePair<Double, Int32>> velocities = new List<KeyValuePair<Double, Int32>>();
+                    foreach (KeyValuePair<Int64, Int32> pair in lastPositions) {
+                        if (pair.Value != 0)
+                            velocities.Add(((pair.Key - lastPosition) / (pair.Value / 1000.0)));
                         lastPosition = pair.Key;
                     }
 
                     Double avgVelocity = 0.0;
-                    foreach(Double velocity in velocities) {
+                    foreach (Double velocity in velocities) {
                         avgVelocity += velocity;
                     }
 
-                    avgVelocity /= (double)RealtimeDataSettingsForm.velocitySamples;
+                    avgVelocity /= velocities.Count;
                     Interlocked.Exchange(ref velocity, avgVelocity);
                     lastPositions = new List<KeyValuePair<Int64, Int32>>();
                 }
-                Thread.Sleep(RealtimeDataSettingsForm.velocityPeriod);
             }
         }
 
         public void CalculateAcceleration() {
             Stopwatch accelerationSW = Stopwatch.StartNew();
-            List<Double> lastVelocities = new List<Double>();
             int lastVelocitiesIndex = 0;
 
             while(true) {
@@ -332,6 +334,7 @@ namespace ServoMotorDriver {
         // Called when the COM port selection is changed, updates COM port in use for serial communication
         private void OnComPortSelectionChanged(object sender, EventArgs e) {
             WriteMessage("COM Port selection modified, updating serial communication");
+            SerialComPort.Close();
             Communications.TryOpenSerialCommunication(ComPortSelectionBox.SelectedItem.ToString(), true);
         }
 
@@ -484,8 +487,6 @@ namespace ServoMotorDriver {
         private void OnFormClosed(object sender, FormClosedEventArgs e) {
             commsThread.Abort();
             testDataThread.Abort();
-            velocityThread.Abort();
-            accelerationThread.Abort();
 
             // Close any still-open subforms
             if(testDataSettings != null || testDataSettingsOpen)

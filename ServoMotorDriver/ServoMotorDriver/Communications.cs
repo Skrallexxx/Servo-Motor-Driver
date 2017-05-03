@@ -24,25 +24,27 @@ namespace ServoMotorDriver {
                     instance.WriteMessage("Communication is already established on the selected COM port");
                     return;
                 }
-                if (reOpen = true && serial.IsOpen)
+
+                serial.PortName = portName;
+                if (reOpen || serial.IsOpen)
                     serial.Close();
                 if (!serial.IsOpen) {
                     if (portName.Length == 0)
                         return;
-                    serial.PortName = portName;
                     try {
                         //Try to connect to the bluetooth
                         instance.WriteMessage("Attempting to open communication on " + portName);
                         serial.Open();
-                        instance.WriteMessage("Communication successfully opened on " + portName);
                     }
-                    catch {
+                    catch(System.UnauthorizedAccessException) {
                         //If the bluetooth does not connect return an error
                         instance.WriteError("Failed to open communication on " + portName);
                     }
+                    if(serial.IsOpen) instance.WriteMessage("Communication successfully opened on " + portName);
                 }
             }
 
+            // Reads the decoder information and returns it as a pair of 32-bit int (time) and 16bit int (decoder value)
             public static KeyValuePair<Int32, Int16> ReadDecoder() {
                 SendOutgoingData(cmdReadDecoder, 1, new byte[] { 0 });
 
@@ -57,6 +59,7 @@ namespace ServoMotorDriver {
                 return new KeyValuePair<int, short>(0, 0);
             }
 
+            // Reads the DAC value back to the interface
             public static byte ReadDAC() {
                 SendOutgoingData(cmdReadDAC, 1, new byte[] { 0 });
 
@@ -70,6 +73,7 @@ namespace ServoMotorDriver {
                 return 0;
             }
 
+            // Reads incoming packets from the arduino
             public static byte[] Read(byte CMD) {
                 if (!serial.IsOpen) TryOpenSerialCommunication(serial.PortName);
 

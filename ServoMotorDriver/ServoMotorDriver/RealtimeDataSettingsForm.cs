@@ -10,10 +10,10 @@ using System.Windows.Forms;
 
 namespace ServoMotorDriver {
     public partial class RealtimeDataSettingsForm : Form {
-        public static int velocitySamples = 500, defaultVelocitySamples = 500;
-        public static int velocityPeriod = 1, defaultVelocityPeriod = 1;
-        public static int accelerationSamples = 500, defaultAccelerationSamples = 500;
-        public static int accelerationPeriod = 1, defaultAccelerationPeriod = 1;
+        public static int velocitySamples = 50, defaultVelocitySamples = 50;
+        public static int velocityPeriod = 10, defaultVelocityPeriod = 10;
+        public static int accelerationSamples = 50, defaultAccelerationSamples = 50;
+        public static int accelerationPeriod = 10, defaultAccelerationPeriod = 10;
 
         public RealtimeDataSettingsForm() {
             InitializeComponent();

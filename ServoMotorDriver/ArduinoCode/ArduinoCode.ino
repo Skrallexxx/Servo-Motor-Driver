@@ -34,6 +34,10 @@ void setup() {
 	DDRC = 0xFF;
 	DDRK = 0x00;
   digitalWrite(RST, HIGH);
+
+  while(!Serial) {
+    delay(20);
+  }
 }
 
 // the loop function runs over and over again until power down or reset
