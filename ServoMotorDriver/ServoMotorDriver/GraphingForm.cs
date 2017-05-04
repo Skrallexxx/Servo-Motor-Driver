@@ -8,7 +8,13 @@ using System.Windows.Forms;
 namespace ServoMotorDriver {
     public partial class GraphingForm : Form {
         public GearedValues<GraphingDataEntry> chartValues = new GearedValues<GraphingDataEntry>();
+        public GearedValues<GraphingLine> chartLine = new GearedValues<GraphingLine>();
         CartesianMapper<GraphingDataEntry> mapper = Mappers.Xy<GraphingDataEntry>();
+        CartesianMapper<GraphingLine> lineMapper = Mappers.Xy<GraphingLine>();
+
+        public static double positionLineY = 0.0;
+        public static double velocityLineY = 0.0;
+        public static double accelerationLineY = 0.0;
 
         public ControlEnums.AXISOPTIONS currentXAxis = ControlEnums.AXISOPTIONS.TIME;
         public ControlEnums.AXISOPTIONS currentYAxis = ControlEnums.AXISOPTIONS.VELOCITY;
@@ -29,19 +35,40 @@ namespace ServoMotorDriver {
 
             mapper = Mappers.Xy<GraphingDataEntry>().X(entry => entry.uptime / 1000.0).Y(entry => entry.velocity);
             Charting.For<GraphingDataEntry>(mapper);
-            Chart.Series = new SeriesCollection { new LineSeries {
-                Values = chartValues, PointGeometrySize = 2, StrokeThickness = 2 }};
+
+            lineMapper = Mappers.Xy<GraphingLine>().X(line => line.uptime / 1000.0).Y(line => line.y);
+            Charting.For<GraphingLine>(lineMapper);
+
+            Chart.Series = new SeriesCollection {
+                new LineSeries {
+                    Values = chartValues, PointGeometrySize = 2, StrokeThickness = 2 },
+                new LineSeries {
+                    Values = chartLine, PointGeometrySize = 2, StrokeThickness = 2, Stroke = System.Windows.Media.Brushes.Green, Fill = System.Windows.Media.Brushes.Transparent }
+            };
+
             Chart.AxisX.Add(new Axis {
                 DisableAnimations = true});
             Chart.DisableAnimations = true;
             Chart.Hoverable = false;
             Chart.DataTooltip = null;
-            chartValues.WithQuality(Quality.High);
+            chartValues.WithQuality(Quality.Highest);
+            chartLine.WithQuality(Quality.Highest);
         }
 
         public void AddGraphingEntry(GraphingDataEntry entry) {
             chartValues.Add(entry);
-            if (chartValues.Count > 1200) chartValues.RemoveAt(0);
+            if (chartValues.Count > 120) chartValues.RemoveAt(0);
+
+            double yVal = 0.0;
+            if (currentYAxis == ControlEnums.AXISOPTIONS.POSITION)
+                yVal = positionLineY;
+            if (currentYAxis == ControlEnums.AXISOPTIONS.VELOCITY)
+                yVal = velocityLineY;
+            if (currentYAxis == ControlEnums.AXISOPTIONS.ACCELERATION)
+                yVal = accelerationLineY;
+
+            chartLine.Add(new GraphingLine(entry.uptime, yVal));
+            if (chartLine.Count > 120) chartLine.RemoveAt(0);
         }
 
         #region Interface Helper Methods
@@ -76,8 +103,8 @@ namespace ServoMotorDriver {
                 mapper.X(entry => entry.velocity);
             if (currentXAxis == ControlEnums.AXISOPTIONS.ACCELERATION)
                 mapper.X(entry => entry.acceleration);
-            Charting.For<GraphingDataEntry>(mapper);
             chartValues.Clear();
+            chartLine.Clear();
         }
 
         // Called when the y-axis selection changes. Updates the plotting mapper also
@@ -107,8 +134,8 @@ namespace ServoMotorDriver {
                 mapper.Y(entry => entry.velocity);
             if (currentYAxis == ControlEnums.AXISOPTIONS.ACCELERATION)
                 mapper.Y(entry => entry.acceleration);
-            Charting.For<GraphingDataEntry>(mapper);
             chartValues.Clear();
+            chartLine.Clear();
         }
 
         // Called when the x-axis unit selection changes. Updates the plotting mapper also
@@ -172,8 +199,8 @@ namespace ServoMotorDriver {
                     mapper.X(entry => Math.Round(entry.acceleration * 60.0 / 2000.0, 2));
             }
 
-            Charting.For<GraphingDataEntry>(mapper);
             chartValues.Clear();
+            chartLine.Clear();
         }
 
         // Called when the y-axis unit selection changes. Updates the plotting mapper also
@@ -205,40 +232,58 @@ namespace ServoMotorDriver {
             if (currentYAxis == ControlEnums.AXISOPTIONS.POSITION) {
                 if (currentYAxisUnit.Equals(ControlEnums.POSITIONUNITS.COUNTS))
                     mapper.Y(entry => entry.position);
-                if (currentYAxisUnit.Equals(ControlEnums.POSITIONUNITS.DEG))
+                if (currentYAxisUnit.Equals(ControlEnums.POSITIONUNITS.DEG)) {
                     mapper.Y(entry => Math.Round(360.0 * entry.rotationPosition / 2000.0, 2));
-                if (currentYAxisUnit.Equals(ControlEnums.POSITIONUNITS.RAD))
+                    lineMapper.Y(line => Math.Round(360.0 * line.y / 2000.0, 2));
+                }
+                if (currentYAxisUnit.Equals(ControlEnums.POSITIONUNITS.RAD)) {
                     mapper.Y(entry => Math.Round(2.0 * entry.rotationPosition / 2000.0, 2));
-                if (currentYAxisUnit.Equals(ControlEnums.POSITIONUNITS.REVS))
+                    lineMapper.Y(line => Math.Round(2.0 * line.y / 2000.0, 2));
+                }
+                if (currentYAxisUnit.Equals(ControlEnums.POSITIONUNITS.REVS)) {
                     mapper.Y(entry => Math.Round(entry.position / 2000.0, 2));
+                    lineMapper.Y(line => Math.Round(line.y / 2000.0, 2));
+                }
             }
 
             // Updates the y-axis value of the mapper for different velocity units
             if (currentYAxis == ControlEnums.AXISOPTIONS.VELOCITY) {
                 if (currentYAxisUnit.Equals(ControlEnums.VELOCITYUNITS.COUNTS))
                     mapper.Y(entry => entry.velocity);
-                if (currentYAxisUnit.Equals(ControlEnums.VELOCITYUNITS.DEG))
+                if (currentYAxisUnit.Equals(ControlEnums.VELOCITYUNITS.DEG)) {
                     mapper.Y(entry => Math.Round(360.0 * entry.velocity / 2000.0, 2));
-                if (currentYAxisUnit.Equals(ControlEnums.VELOCITYUNITS.RAD))
+                    lineMapper.Y(line => Math.Round(360.0 * line.y / 2000.0, 2));
+                }
+                if (currentYAxisUnit.Equals(ControlEnums.VELOCITYUNITS.RAD)) {
                     mapper.Y(entry => Math.Round(2.0 * entry.velocity / 2000.0, 2));
-                if (currentYAxisUnit.Equals(ControlEnums.VELOCITYUNITS.RPM))
+                    lineMapper.Y(line => Math.Round(2.0 * line.y / 2000.0, 2));
+                }
+                if (currentYAxisUnit.Equals(ControlEnums.VELOCITYUNITS.RPM)) {
                     mapper.Y(entry => Math.Round(entry.velocity * 60.0 / 2000.0, 2));
+                    lineMapper.Y(line => Math.Round(line.y * 60.0 / 2000.0, 2));
+                }
             }
 
             // Updates the y-axis value of the mapper for different acceleration units
             if (currentYAxis == ControlEnums.AXISOPTIONS.ACCELERATION) {
                 if (currentYAxisUnit.Equals(ControlEnums.ACCELERATIONUNITS.COUNTS))
                     mapper.Y(entry => entry.acceleration);
-                if (currentYAxisUnit.Equals(ControlEnums.ACCELERATIONUNITS.DEG))
+                if (currentYAxisUnit.Equals(ControlEnums.ACCELERATIONUNITS.DEG)) {
                     mapper.Y(entry => Math.Round(360.0 * entry.acceleration / 2000.0, 2));
-                if (currentYAxisUnit.Equals(ControlEnums.ACCELERATIONUNITS.RAD))
+                    lineMapper.Y(line => Math.Round(360.0 * line.y / 2000.0, 2));
+                }
+                if (currentYAxisUnit.Equals(ControlEnums.ACCELERATIONUNITS.RAD)) {
                     mapper.Y(entry => Math.Round(2.0 * entry.acceleration / 2000.0, 2));
-                if (currentYAxisUnit.Equals(ControlEnums.ACCELERATIONUNITS.RPM))
+                    lineMapper.Y(line => Math.Round(2.0 * line.y / 2000.0, 2));
+                }
+                if (currentYAxisUnit.Equals(ControlEnums.ACCELERATIONUNITS.RPM)) {
                     mapper.Y(entry => Math.Round(entry.acceleration * 60.0 / 2000.0, 2));
+                    lineMapper.Y(line => Math.Round(line.y * 60.0 / 2000.0, 2));
+                }
             }
 
-            Charting.For<GraphingDataEntry>(mapper);
             chartValues.Clear();
+            chartLine.Clear();
         }
 
         private void OnFormClosed(object sender, FormClosedEventArgs e) {

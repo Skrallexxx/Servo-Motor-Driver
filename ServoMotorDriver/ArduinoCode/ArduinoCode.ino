@@ -3,6 +3,9 @@ Name:		ArduinoCode.ino
 Created:	3/7/2017 11:31:51 AM
 Author:	Alex
 */
+
+const bool TESTING = true;
+
 // Decoder Pin Mappings
 const int SEL = 37, OE = 36, RST = 35;
 
@@ -44,11 +47,13 @@ void setup() {
 void loop() {
 	if (!Serial)
 		Serial.begin(115200);
-  
-	if (checkTime(deltaT)) {
-		//ReadDecoderBytes();
-		dataValue += 10;
-	}
+
+  if(!TESTING) {
+    if (checkTime(deltaT)) {
+    	//ReadDecoderBytes();
+      dataValue += 10;
+    }
+  }
 	
 	while (Serial.available() >= 8) {
 		int16_t checkSum = 0;
@@ -89,6 +94,10 @@ void loop() {
     else if (cmdByte == cmdSetDAC) {
         dacValue = dataBytes[0];
         PORTA = dacValue;
+
+        if(TESTING) {
+          dataValue += (int)((dacValue - 128) * 100);
+        }
     }
     else if (cmdByte == cmdReadDAC) {
         byte bytes[] = { dacValue };

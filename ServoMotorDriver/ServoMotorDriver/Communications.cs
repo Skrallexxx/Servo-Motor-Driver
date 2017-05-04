@@ -76,6 +76,7 @@ namespace ServoMotorDriver {
             // Reads incoming packets from the arduino
             public static byte[] Read(byte CMD) {
                 if (!serial.IsOpen) TryOpenSerialCommunication(serial.PortName);
+                if (!serial.IsOpen) return null;
 
                 if (serial.BytesToRead >= 8) {
                     Int16 checkSum = 0;

@@ -48,4 +48,14 @@ namespace ServoMotorDriver {
             return this;
         }
     }
+
+    public class GraphingLine {
+        public double uptime = 0.0;
+        public double y = 0.0;
+
+        public GraphingLine(double time, double y) {
+            this.uptime = time;
+            this.y = y;
+        }
+    }
 }

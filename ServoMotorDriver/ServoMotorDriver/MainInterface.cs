@@ -43,6 +43,16 @@ namespace ServoMotorDriver {
         KeyValuePair<Int64, Int32> previousPosition = new KeyValuePair<Int64, Int32>();
         List<Double> lastVelocities = new List<Double>();
         Int64 lastPosition = 0;
+        List<Int64> errors = new List<Int64>();
+        Int64 errorSum = 0;
+        Int64 error = 0;
+
+        double kp = 0.0045;
+        double ki = 0.0000000001;
+        double kd = 0.000;
+
+        Int64 testingTimeBest = 10000;
+        double kiBest = 0.0000000001;
 
         // Velocity Variables
         public double velocity = 0;
@@ -66,6 +76,7 @@ namespace ServoMotorDriver {
 
         // Stopwatches for determinining elapsed times
         Stopwatch uptimeSW = new Stopwatch();
+        Stopwatch testingSW = new Stopwatch();
         Random rand = new Random();
 
         // Enums for current selected modes of operation
@@ -206,11 +217,68 @@ namespace ServoMotorDriver {
                                                                                        .setBinary(Communications.dacCurrentValue)
                                                                                        .setPosition(totalPos).setRotationPosition(currentRotationPos).setVelocity(velocity)
                                                                                        .setAcceleration(acceleration));
+            
+            if (currentMode == ControlEnums.MODE.POSITIONAL) {
+                if (error == 0 && !testingSW.IsRunning) {
+                    testingSW = Stopwatch.StartNew();
+                    DesiredPositionUpDown.Value += 10000;
+                }
+                PID();
+                if (errors.Count > 1) {
+                    if ((error == 0 && errors[errors.Count - 2] == 0) || testingSW.ElapsedMilliseconds > testingTimeBest) {
+                        testingSW.Stop();
+                        if (testingSW.ElapsedMilliseconds < testingTimeBest) {
+                            WriteMessage("New best Ki: " + ki + " at settle time: " + testingSW.ElapsedMilliseconds);
+                            kiBest = ki;
+                            testingTimeBest = testingSW.ElapsedMilliseconds;
+                        }
+                        ki += 0.0000000001;
+                    }
+                }
+            }
+            /*
+            if (currentMode == ControlEnums.MODE.POSITIONAL)
+                PID();
+           */
 
             // Draw the motor visualisation circle
             drawCirclePlot();
         }
 
+        #endregion
+
+        #region PID Control
+        public void PID() {
+            error = desiredPos - totalPos;
+
+            errors.Add(error);
+            errorSum += error;
+
+            double PID = 0.0;
+            
+
+            PID = error * kp;
+
+            PID += errorSum * ki;
+            if(errors.Count > 1)
+                PID += ((error - errors[errors.Count - 2])) * kd;
+            
+
+            if (PID > 127)
+                PID = 127;
+            if (PID < -127)
+                PID = -127;
+
+            if(PID < 1 && PID > -1) {
+                if (error > 0)
+                    PID = 1;
+                if (error < 0)
+                    PID = -1;
+            }
+
+            RawControlUpDown.Value = BoundBinary((byte)(PID + 128));
+            OnRawControlValueChanged(null, null);
+        }
         #endregion
 
         #region Threaded Methods
@@ -452,6 +520,12 @@ namespace ServoMotorDriver {
             currentPos = (Int16)PositionIntegerUpDown.Value;
         }
 
+
+        private void OnDesiredPositionChanged(object sender, EventArgs e) {
+            desiredPos = (int)(DesiredPositionUpDown.Value);
+            GraphingForm.positionLineY = (int)(DesiredPositionUpDown.Value);
+        }
+
         // Called when the Test Data Settings button is clicked from the context menu
         private void OnTestDataSettingsMenuClick(object sender, EventArgs e) {
             if(testDataSettings == null || !testDataSettingsOpen)
@@ -510,9 +584,14 @@ namespace ServoMotorDriver {
         // Calculates the DAC input binary value from an output voltage
         public byte CalculateBinaryFromVoltage(decimal voltage) {
             decimal binary = Math.Round((voltage - dac1.intercept) / dac1.gradient);
-            if (binary > 255) binary = 255;
-            if (binary < 5) binary = 5;
-            return (byte)Math.Round(binary);
+            return BoundBinary((int)Math.Round(binary));
+        }
+
+        public byte BoundBinary(int binary) {
+            int b = binary;
+            if (b > 255) b = 255;
+            if (b < 5) b = 5;
+            return (byte)b;
         }
 
         // Calculates the Position value to display for the currently selected position unit
