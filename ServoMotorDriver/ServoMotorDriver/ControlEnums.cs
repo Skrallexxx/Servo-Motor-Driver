@@ -4,27 +4,9 @@ using System.Reflection;
 
 namespace ServoMotorDriver {
     public class ControlEnums {
-        // Operation mode enums, defines the possible motor control modes
-        public enum MODE {
-            [Properties("Freespin")]
-            FREESPIN,
-            [Properties("Binary Control")]
-            BINARY,
-            [Properties("Voltage Control")]
-            MANUAL_SPEED,
-            [Properties("Position Control")]
-            POSITIONAL,
-            [Properties("Dead-Band Testing")]
-            DEAD_BAND_TEST
-        }
-
         public enum DATAMODE {
             [Properties("Decoder Output")]
             DECODER,
-            [Properties("Test Data")]
-            TEST,
-            [Properties("Test Data (with Random)")]
-            TESTRAND,
             [Properties("Manual Input")]
             MANUAL
         }
@@ -48,7 +30,7 @@ namespace ServoMotorDriver {
             DEFAULT
         }
 
-        public enum POSITIONUNITS {
+        public enum BASEUNITS {
             [Properties("Counts")]
             COUNTS,
             [Properties("Degrees")]
@@ -59,28 +41,6 @@ namespace ServoMotorDriver {
             REVS
         }
 
-        public enum VELOCITYUNITS {
-            [Properties("Counts/s")]
-            COUNTS,
-            [Properties("Degrees/s")]
-            DEG,
-            [Properties("Radians/s")]
-            RAD,
-            [Properties("RPM")]
-            RPM
-        }
-
-        public enum ACCELERATIONUNITS {
-            [Properties("Counts/s²")]
-            COUNTS,
-            [Properties("Degrees/s²")]
-            DEG,
-            [Properties("Radians/s²")]
-            RAD,
-            [Properties("RPM/s")]
-            RPM
-        }
-
         public enum AXISOPTIONS {
             [Properties("Time", typeof(TIMEUNITS))]
             TIME,
@@ -88,11 +48,11 @@ namespace ServoMotorDriver {
             VOLTAGE,
             [Properties("Binary", typeof(BINARYUNITS))]
             BINARY,
-            [Properties("Position", typeof(POSITIONUNITS))]
+            [Properties("Position", typeof(BASEUNITS))]
             POSITION,
-            [Properties("Velocity", typeof(VELOCITYUNITS))]
+            [Properties("Velocity", typeof(BASEUNITS))]
             VELOCITY,
-            [Properties("Acceleration", typeof(ACCELERATIONUNITS))]
+            [Properties("Acceleration", typeof(BASEUNITS))]
             ACCELERATION
         }
 
@@ -112,12 +72,8 @@ namespace ServoMotorDriver {
                     units = new VOLTAGEUNITS();
                 if (T == typeof(BINARYUNITS))
                     units = new BINARYUNITS();
-                if (T == typeof(POSITIONUNITS))
-                    units = new POSITIONUNITS();
-                if (T == typeof(VELOCITYUNITS))
-                    units = new VELOCITYUNITS();
-                if (T == typeof(ACCELERATIONUNITS))
-                    units = new ACCELERATIONUNITS();
+                if (T == typeof(BASEUNITS))
+                    units = new BASEUNITS();
             }
 
             public PropertiesAttribute() { }

@@ -8,6 +8,7 @@ namespace ServoMotorDriver {
         public class Communications {
             // Received inputs and outgoing outputs
             public static byte dacCurrentValue = 0;
+            public static KeyValuePair<Int32, Int16> decoderValue = new KeyValuePair<int, short>();
 
             // Communication Variables
             public const byte START = 0x7E, PAD = 0x7D, END = 0x7E;
@@ -26,7 +27,7 @@ namespace ServoMotorDriver {
                 }
 
                 serial.PortName = portName;
-                if (reOpen || serial.IsOpen)
+                if (reOpen)
                     serial.Close();
                 if (!serial.IsOpen) {
                     if (portName.Length == 0)
@@ -36,7 +37,7 @@ namespace ServoMotorDriver {
                         instance.WriteMessage("Attempting to open communication on " + portName);
                         serial.Open();
                     }
-                    catch(System.UnauthorizedAccessException) {
+                    catch {
                         //If the bluetooth does not connect return an error
                         instance.WriteError("Failed to open communication on " + portName);
                     }
@@ -47,39 +48,26 @@ namespace ServoMotorDriver {
             // Reads the decoder information and returns it as a pair of 32-bit int (time) and 16bit int (decoder value)
             public static KeyValuePair<Int32, Int16> ReadDecoder() {
                 SendOutgoingData(cmdReadDecoder, 1, new byte[] { 0 });
-
-                byte[] decoderBytes = Read(cmdReadDecoder);
-                if(decoderBytes != null) {
-                    if (decoderBytes.Length == 6) {
-                        KeyValuePair<Int32, Int16> decoder = new KeyValuePair<Int32, Int16>((decoderBytes[0] << 24) | (decoderBytes[1] << 16) | (decoderBytes[2] << 8) | decoderBytes[3], (Int16)((decoderBytes[4] << 8) | decoderBytes[5]));
-                        return decoder;
-                    }
-                }
-
-                return new KeyValuePair<int, short>(0, 0);
+                Read();
+                return decoderValue;
             }
 
             // Reads the DAC value back to the interface
             public static byte ReadDAC() {
                 SendOutgoingData(cmdReadDAC, 1, new byte[] { 0 });
 
-                byte[] dacByte = Read(cmdReadDAC);
-                if(dacByte != null) {
-                    if(dacByte.Length == 1) {
-                        return dacByte[0];
-                    }
-
-                }
-                return 0;
+                Read();
+                return dacCurrentValue;
             }
 
-            // Reads incoming packets from the arduino
-            public static byte[] Read(byte CMD) {
-                if (!serial.IsOpen) TryOpenSerialCommunication(serial.PortName);
+            public static void Read() {
+                if (!instance.SerialComPort.IsOpen) return;
 
-                if (serial.BytesToRead >= 8) {
+                // Send an update request for incoming values
+                while (instance.SerialComPort.BytesToRead >= 7)
+                {
                     Int16 checkSum = 0;
-                    if (serial.ReadByte() != START) return null;
+                    if (serial.ReadByte() != START) return;
                     cmdByte = (byte)serial.ReadByte();
                     lenByte1 = (byte)serial.ReadByte();
 
@@ -93,29 +81,39 @@ namespace ServoMotorDriver {
                     lenByte2 = (byte)serial.ReadByte();
                     checkByte1 = (byte)serial.ReadByte();
                     checkByte2 = (byte)serial.ReadByte();
-                    if (serial.ReadByte() != END) return null;
-                    if (lenByte1 != lenByte2) return null;
+                    if (serial.ReadByte() != END) return;
+                    if (lenByte1 != lenByte2) return;
 
                     checkSum += (byte)(cmdByte + lenByte1 + lenByte2);
                     Int16 receivedCheckSum = (Int16)((checkByte1 << 8) | checkByte2);
                     if (checkSum != receivedCheckSum) {
-                        instance.WriteError("Received invalid checksum");
-                        return null;
+                        return;
                     }
 
-                    if (cmdByte == CMD) {
-                        return dataBytes;
+                    if (cmdByte == cmdReadDecoder) {
+                        if (dataBytes != null && dataBytes.Length == 6) {
+                            decoderValue = new KeyValuePair<Int32, Int16>((dataBytes[0] << 24) | (dataBytes[1] << 16) | (dataBytes[2] << 8) | dataBytes[3],
+                                (Int16)((dataBytes[4] << 8) | dataBytes[5]));
+                        }
+                        return;
+                    }
+                    else if (cmdByte == cmdReadDAC) {
+                        if (dataBytes != null && dataBytes.Length == 1) {
+                            dacCurrentValue = dataBytes[0];
+                        }
                     }
                     else {
                         instance.WriteError("Received invalid CMD byte " + cmdByte);
-                        return null;
+                        return;
                     }
                 }
-                return null;
             }
 
             public static void SendOutgoingData(byte CMD, byte LEN, byte[] DATA) {
-                if (!serial.IsOpen) TryOpenSerialCommunication(serial.PortName);
+                if (!serial.IsOpen) return;
+
+                if (serial.BytesToWrite > 0)
+                    Thread.Sleep(1);
 
                 byte[] bytesToWrite = new byte[7 + LEN];
                 bytesToWrite[0] = START; bytesToWrite[1] = CMD; bytesToWrite[2] = LEN;

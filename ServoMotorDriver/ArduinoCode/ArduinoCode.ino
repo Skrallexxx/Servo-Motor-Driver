@@ -1,8 +1,11 @@
 /*
-Name:		ArduinoCode.ino
-Created:	3/7/2017 11:31:51 AM
-Author:	Alex
+Name:    ArduinoCode.ino
+Created:  3/7/2017 11:31:51 AM
+Author: Alex
 */
+
+const bool TESTING = true;
+
 // Decoder Pin Mappings
 const int SEL = 37, OE = 36, RST = 35;
 
@@ -29,10 +32,10 @@ int32_t dataValue = 0;
 
 // the setup function runs once when you press reset or power the board
 void setup() {
-	Serial.begin(115200);
-	DDRA = 0xFF;
-	DDRC = 0xFF;
-	DDRK = 0x00;
+  Serial.begin(115200);
+  DDRA = 0xFF;
+  DDRC = 0xFF;
+  DDRK = 0x00;
   digitalWrite(RST, HIGH);
 
   while(!Serial) {
@@ -42,36 +45,38 @@ void setup() {
 
 // the loop function runs over and over again until power down or reset
 void loop() {
-	if (!Serial)
-		Serial.begin(115200);
+  if (!Serial)
+    Serial.begin(115200);
+
+  if(!TESTING) {
+    if (checkTime(deltaT)) {
+      ReadDecoderBytes();
+      dataValue = (int16_t)((bitFlip(decoderHigh) << 8) | bitFlip(decoderLow));
+    }
+  }
   
-	if (checkTime(deltaT)) {
-		//ReadDecoderBytes();
-		dataValue += 10;
-	}
-	
-	while (Serial.available() >= 8) {
-		int16_t checkSum = 0;
-		if (Serial.read() != START) return;
-		cmdByte = Serial.read();
-		lenByte1 = Serial.read();
+  while (Serial.available() >= 8) {
+    int16_t checkSum = 0;
+    if (Serial.read() != START) return;
+    cmdByte = Serial.read();
+    lenByte1 = Serial.read();
 
-		byte* dataBytes = new byte[lenByte1];
+    byte* dataBytes = new byte[lenByte1];
 
-		for (int i = 0; i < lenByte1; i++) {
-			dataBytes[i] = Serial.read();
-			checkSum += dataBytes[i];
-		}
+    for (int i = 0; i < lenByte1; i++) {
+      dataBytes[i] = Serial.read();
+      checkSum += dataBytes[i];
+    }
 
-		lenByte2 = Serial.read();
-		checkByte1 = Serial.read();
-		checkByte2 = Serial.read();
-		if (Serial.read() != END) return;
-		if (lenByte1 != lenByte2) return;
+    lenByte2 = Serial.read();
+    checkByte1 = Serial.read();
+    checkByte2 = Serial.read();
+    if (Serial.read() != END) return;
+    if (lenByte1 != lenByte2) return;
 
-		checkSum += cmdByte + lenByte1 + lenByte2;
-		int16_t receivedCheckSum = (int16_t)((checkByte1 << 8) | checkByte2);
-		if (checkSum != receivedCheckSum) return;
+    checkSum += cmdByte + lenByte1 + lenByte2;
+    int16_t receivedCheckSum = (int16_t)((checkByte1 << 8) | checkByte2);
+    if (checkSum != receivedCheckSum) return;
 
     if(cmdByte == cmdReadDecoder) {
         unsigned long timeStamp = 0;
@@ -89,6 +94,10 @@ void loop() {
     else if (cmdByte == cmdSetDAC) {
         dacValue = dataBytes[0];
         PORTA = dacValue;
+
+        if(TESTING) {
+          dataValue += (int)((dacValue - 130) * 100);
+        }
     }
     else if (cmdByte == cmdReadDAC) {
         byte bytes[] = { dacValue };
@@ -96,61 +105,61 @@ void loop() {
     }
 
     delete(dataBytes);
-	}
+  }
 }
 
 void SendOutgoingData(byte CMD, byte LEN, byte DATA[]) {
   byte* bytesToWrite = new byte[7 + LEN];
   bytesToWrite[0] = START; bytesToWrite[1] = CMD; bytesToWrite[2] = LEN;
   
-	int16_t checkSum = 0;
+  int16_t checkSum = 0;
 
-	for (int i = 0; i < LEN; i++) {
-		//Serial.write(DATA[i]);
+  for (int i = 0; i < LEN; i++) {
+    //Serial.write(DATA[i]);
     bytesToWrite[3 + i] = DATA[i];
-		checkSum += DATA[i];
-	}
+    checkSum += DATA[i];
+  }
 
-	checkSum += CMD + LEN + LEN;
+  checkSum += CMD + LEN + LEN;
   bytesToWrite[3 + LEN] = LEN; bytesToWrite[4 + LEN] = (byte)(checkSum >> 8); bytesToWrite[5 + LEN] = (byte)checkSum; bytesToWrite[6 + LEN] = END;
   Serial.write(bytesToWrite, 7 + LEN);
   delete(bytesToWrite);
 }
 
 bool checkTime(int32_t timeChange) {
-	if (micros() - oldMicros >= timeChange) {
-		oldMicros = micros();
-		return true;
-	}
-	return false;
+  if (micros() - oldMicros >= timeChange) {
+    oldMicros = micros();
+    return true;
+  }
+  return false;
 }
 
 unsigned long ReadDecoderBytes() {
   int64_t timeDiff = millis() - oldMillis;
   oldMillis = millis();
-	digitalWrite(SEL, LOW);
-	digitalWrite(OE, LOW);
+  digitalWrite(SEL, LOW);
+  digitalWrite(OE, LOW);
 
-	delay(2);
-	decoderHigh = PINF;
+  delay(2);
+  decoderHigh = PINF;
 
-	delay(2);
-	digitalWrite(SEL, HIGH);
+  delay(2);
+  digitalWrite(SEL, HIGH);
 
-	delay(2);
-	decoderLow = PINF;
+  delay(2);
+  decoderLow = PINF;
 
-	delay(2);
-	digitalWrite(OE, HIGH);
-	return (int32_t)timeDiff;
+  delay(2);
+  digitalWrite(OE, HIGH);
+  return (int32_t)timeDiff;
 }
 
 byte bitFlip(byte value) {
-	byte bFlip = 0;
-	byte j = 7;
-	for (byte i = 0; i < 8; i++) {
-		bitWrite(bFlip, i, bitRead(value, j));
-		j--;
-	}
-	return bFlip;
+  byte bFlip = 0;
+  byte j = 7;
+  for (byte i = 0; i < 8; i++) {
+    bitWrite(bFlip, i, bitRead(value, j));
+    j--;
+  }
+  return bFlip;
 }

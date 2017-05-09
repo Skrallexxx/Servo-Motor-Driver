@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace ServoMotorDriver {
-    public class GraphingDataEntry {
+    public class GraphingEntry {
         public double uptime = 0.0;
         public double voltage = 0.0;
         public int binary = 0;
@@ -14,38 +14,48 @@ namespace ServoMotorDriver {
         public double velocity = 0.0;
         public double acceleration = 0.0;
 
-        public GraphingDataEntry(double uptime) {
+        public GraphingEntry(double uptime) {
             this.uptime = uptime;
         }
 
-        public GraphingDataEntry setVoltage(double voltage) {
+        public GraphingEntry setVoltage(double voltage) {
             this.voltage = voltage;
             return this;
         }
 
-        public GraphingDataEntry setBinary(int binary) {
+        public GraphingEntry setBinary(int binary) {
             this.binary = binary;
             return this;
         }
 
-        public GraphingDataEntry setPosition(Int64 position) {
+        public GraphingEntry setPosition(Int64 position) {
             this.position = position;
             return this;
         }
 
-        public GraphingDataEntry setRotationPosition(Int32 rotationPosition) {
+        public GraphingEntry setRotationPosition(Int32 rotationPosition) {
             this.rotationPosition = rotationPosition;
             return this;
         }
 
-        public GraphingDataEntry setVelocity(double velocity) {
+        public GraphingEntry setVelocity(double velocity) {
             this.velocity = velocity;
             return this;
         }
 
-        public GraphingDataEntry setAcceleration(double acceleration) {
+        public GraphingEntry setAcceleration(double acceleration) {
             this.acceleration = acceleration;
             return this;
+        }
+    }
+
+    public class GraphingLine {
+        public double uptime = 0.0;
+        public double y = 0.0;
+
+        public GraphingLine(double time, double y) {
+            this.uptime = time;
+            this.y = y;
         }
     }
 }
