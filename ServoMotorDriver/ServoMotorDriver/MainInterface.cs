@@ -34,22 +34,24 @@ namespace ServoMotorDriver {
         public KeyValuePair<Int32, Int16> decoderValue;
         public Int16 currentPos = 0;
         public Int16 lastPos = 0;
-        public int currentPosAtomic = 0;
         public int currentRotationPos = 0;
         public Int64 totalPos = 0;
-        public Int64 totalPosAtomic = 0;
         public Int64 lastTotalPos = 0;
 
         // Velocity Variables
         public double velocity = 0;
+        public Int64 lastPosition = 0;
+        public int positionIndex = 0;
         List<KeyValuePair<Int64, Int32>> lastPositions = new List<KeyValuePair<Int64, Int32>>();
 
         // Acceleration variables
-        public double acceleration = 0;
-        List<Double> lastVelocities = new List<Double>();
+        public double acceleration = 0.0;
+        public double lastVelocity = 0.0;
+        public int velocityIndex = 0;
+        List<KeyValuePair<Double, Int32>> lastVelocities = new List<KeyValuePair<Double, Int32>>();
 
         /*==================================================== PID ====================================================*/
-        Int64 lastPosition = 0, error = 0, errorLast = 0;
+        Int64 error = 0, errorLast = 0;
         double errorIntegral = 0, errorDerivative;
 
         // Proportional, Integral and Derivative multipliers
@@ -163,6 +165,9 @@ namespace ServoMotorDriver {
             LowByteTextBox.Text = ((byte)(decoderValue.Value)).ToString();
             PositionIntegerUpDown.Value = currentPos;
 
+            CalculateVelocity();
+            CalculateAcceleration();
+
             // Calculate current position (in deg, rad, counts or revs) and write to the interface
             CurrentPositionTextBox.Text = CalculatePositionDisplay();
 
@@ -253,50 +258,72 @@ namespace ServoMotorDriver {
                     }
                     Communications.ReadDAC();
                 }
-                CalculateVelocity();
-                CalculateAcceleration();
                 Thread.Sleep(10);
             }
         }
 
         // Calculates the velocity over a certain number of samples (and sample-period). Runs in a separate thread to more easily configure sample period
         public void CalculateVelocity() {
+
             if (totalPos != lastTotalPos) {
-                lastPositions.Add(new KeyValuePair<Int64, Int32>(totalPos, decoderValue.Key));
-                if (lastPositions.Count >= RealtimeDataSettingsForm.velocitySamples) {
-                    List<Double> velocities = new List<Double>();
-                    foreach (KeyValuePair<Int64, Int32> pair in lastPositions) {
-                        if (pair.Value != 0)
-                            velocities.Add(((pair.Key - lastPosition) / (pair.Value / 1000.0)));
-                        lastPosition = pair.Key;
+                lastPositions.Add(new KeyValuePair<long, int>(totalPos, decoderValue.Key));
+
+                if(lastPositions.Count >=(500 / ProgramLoopTimer.Interval)) {
+                    lastPositions.RemoveAt(0);
+                    positionIndex++;
+                }
+
+                // Calculate moving average every 10 additions
+                if (positionIndex >= 5) {
+                    positionIndex = 0;
+
+                    List<double> velocities = new List<double>();
+                    foreach(KeyValuePair<long, int> posPair in lastPositions) {
+                        if(posPair.Value != 0) {
+                            double velocity = (posPair.Key - lastPosition) / (posPair.Value / 1000.0);
+                            velocities.Add(velocity);
+                            lastPosition = posPair.Key;
+                        }
                     }
 
-                    Double avgVelocity = 0.0;
-                    foreach (Double vel in velocities) {
+                    double avgVelocity = 0.0;
+                    foreach(double vel in velocities) {
                         avgVelocity += vel;
                     }
 
                     avgVelocity /= velocities.Count;
-                    Interlocked.Exchange(ref velocity, avgVelocity);
-                    lastPositions = new List<KeyValuePair<Int64, Int32>>();
+                    velocity = avgVelocity;
                 }
             }
         }
 
         public void CalculateAcceleration() {
-            if(!accelerationSW.IsRunning) {
-                accelerationSW = Stopwatch.StartNew();
+            lastVelocities.Add(new KeyValuePair<double, int>(velocity, decoderValue.Key));
+
+            if(lastVelocities.Count > (500 / ProgramLoopTimer.Interval)) {
+                lastVelocities.RemoveAt(0);
+                velocityIndex++;
             }
-            lastVelocities.Add(velocity);
-            if (lastVelocities.Count >= 5)
-            {
-                accelerationSW.Stop();
-                Double avgAcceleration = 0.0;
 
-                avgAcceleration = lastVelocities[lastVelocities.Count - 1] - lastVelocities[0] / (accelerationSW.ElapsedMilliseconds / 1000.0);
+            if(velocityIndex >= 5) {
+                velocityIndex = 0;
 
-                Interlocked.Exchange(ref acceleration, avgAcceleration);
-                lastVelocities = new List<Double>();
+                List<double> accelerations = new List<double>();
+                foreach(KeyValuePair<double, int> velPair in lastVelocities) {
+                    if(velPair.Value != 0) {
+                        double acceleration = (velPair.Key - lastVelocity) / (velPair.Value / 1000.0);
+                        accelerations.Add(acceleration);
+                        lastVelocity = velPair.Key;
+                    }
+
+                }
+
+                double avgAcceleration = 0.0;
+                foreach (double accel in accelerations)
+                    avgAcceleration += accel;
+
+                avgAcceleration /= accelerations.Count;
+                acceleration = avgAcceleration;
             }
         }
 

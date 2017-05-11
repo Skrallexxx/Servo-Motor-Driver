@@ -73,11 +73,11 @@ namespace ServoMotorDriver {
             Chart.DisableAnimations = true;
             Chart.Hoverable = false;
             Chart.DataTooltip = null;
-            series1Values.WithQuality(Quality.Highest);
-            series2Values.WithQuality(Quality.Highest);
-            setLine1Values.WithQuality(Quality.Highest);
-            setLine2Values.WithQuality(Quality.Highest);
-            setLine3Values.WithQuality(Quality.Medium);
+            series1Values.WithQuality(Quality.Low);
+            series2Values.WithQuality(Quality.Low);
+            setLine1Values.WithQuality(Quality.Low);
+            setLine2Values.WithQuality(Quality.Low);
+            setLine3Values.WithQuality(Quality.Low);
 
             pictureBox1.BackColor = Color.FromArgb(255, 33, 149, 242);
             pictureBox2.BackColor = Color.FromArgb(255, 243, 67, 54);
