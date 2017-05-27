@@ -36,7 +36,7 @@ namespace ServoMotorDriver {
         public static double velocityLineY = 0.0;
         public static double accelerationLineY = 0.0;
 
-        int numDataPoints = 600;
+        int numDataPoints = 300;
 
         public GraphingForm() {
             InitializeComponent();
@@ -71,10 +71,10 @@ namespace ServoMotorDriver {
 
             // Chart option setup
             Chart.DisableAnimations = true;
-            Chart.Hoverable = false;
+            //Chart.Hoverable = false;
             Chart.DataTooltip = null;
-            series1Values.WithQuality(Quality.Low);
-            series2Values.WithQuality(Quality.Low);
+            series1Values.WithQuality(Quality.Medium);
+            series2Values.WithQuality(Quality.Medium);
             setLine1Values.WithQuality(Quality.Low);
             setLine2Values.WithQuality(Quality.Low);
             setLine3Values.WithQuality(Quality.Low);

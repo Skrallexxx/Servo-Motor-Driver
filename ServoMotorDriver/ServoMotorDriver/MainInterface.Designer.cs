@@ -29,15 +29,15 @@
         private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
-            System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea10 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
-            System.Windows.Forms.DataVisualization.Charting.Series series10 = new System.Windows.Forms.DataVisualization.Charting.Series();
-            System.Windows.Forms.DataVisualization.Charting.DataPoint dataPoint10 = new System.Windows.Forms.DataVisualization.Charting.DataPoint(0D, 0D);
-            System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea11 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
-            System.Windows.Forms.DataVisualization.Charting.Series series11 = new System.Windows.Forms.DataVisualization.Charting.Series();
-            System.Windows.Forms.DataVisualization.Charting.DataPoint dataPoint11 = new System.Windows.Forms.DataVisualization.Charting.DataPoint(0D, 0D);
-            System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea12 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
-            System.Windows.Forms.DataVisualization.Charting.Series series12 = new System.Windows.Forms.DataVisualization.Charting.Series();
-            System.Windows.Forms.DataVisualization.Charting.DataPoint dataPoint12 = new System.Windows.Forms.DataVisualization.Charting.DataPoint(0D, 0D);
+            System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea4 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
+            System.Windows.Forms.DataVisualization.Charting.Series series4 = new System.Windows.Forms.DataVisualization.Charting.Series();
+            System.Windows.Forms.DataVisualization.Charting.DataPoint dataPoint4 = new System.Windows.Forms.DataVisualization.Charting.DataPoint(0D, 0D);
+            System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea5 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
+            System.Windows.Forms.DataVisualization.Charting.Series series5 = new System.Windows.Forms.DataVisualization.Charting.Series();
+            System.Windows.Forms.DataVisualization.Charting.DataPoint dataPoint5 = new System.Windows.Forms.DataVisualization.Charting.DataPoint(0D, 0D);
+            System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea6 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
+            System.Windows.Forms.DataVisualization.Charting.Series series6 = new System.Windows.Forms.DataVisualization.Charting.Series();
+            System.Windows.Forms.DataVisualization.Charting.DataPoint dataPoint6 = new System.Windows.Forms.DataVisualization.Charting.DataPoint(0D, 0D);
             this.SerialComPort = new System.IO.Ports.SerialPort(this.components);
             this.ProgramLoopTimer = new System.Windows.Forms.Timer(this.components);
             this.COMPortSelectionBox = new System.Windows.Forms.ComboBox();
@@ -63,9 +63,9 @@
             this.label1 = new System.Windows.Forms.Label();
             this.AllowableOffsetUpDown = new System.Windows.Forms.NumericUpDown();
             this.groupBox3 = new System.Windows.Forms.GroupBox();
-            this.label12 = new System.Windows.Forms.Label();
-            this.label11 = new System.Windows.Forms.Label();
-            this.label2 = new System.Windows.Forms.Label();
+            this.KdModifierTextBox = new System.Windows.Forms.TextBox();
+            this.KiModifierTextBox = new System.Windows.Forms.TextBox();
+            this.KpModifierTextBox = new System.Windows.Forms.TextBox();
             this.PositionPUpDown = new System.Windows.Forms.NumericUpDown();
             this.PLabel = new System.Windows.Forms.Label();
             this.ILabel = new System.Windows.Forms.Label();
@@ -101,7 +101,6 @@
             this.viewToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.graphsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.configurationToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.realtimeDataSettingsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.deadBandSettingsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
             this.MotorDataGroupBox = new System.Windows.Forms.GroupBox();
@@ -149,12 +148,13 @@
             // 
             // SerialComPort
             // 
-            this.SerialComPort.BaudRate = 115200;
+            this.SerialComPort.BaudRate = 57600;
+            this.SerialComPort.WriteBufferSize = 4096;
             // 
             // ProgramLoopTimer
             // 
             this.ProgramLoopTimer.Enabled = true;
-            this.ProgramLoopTimer.Interval = 20;
+            this.ProgramLoopTimer.Interval = 30;
             this.ProgramLoopTimer.Tick += new System.EventHandler(this.ProgramLoop);
             // 
             // COMPortSelectionBox
@@ -173,7 +173,7 @@
             // 
             this.StatusStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.MessageLogStatusStrip});
-            this.StatusStrip.Location = new System.Drawing.Point(0, 492);
+            this.StatusStrip.Location = new System.Drawing.Point(0, 493);
             this.StatusStrip.Name = "StatusStrip";
             this.StatusStrip.Size = new System.Drawing.Size(730, 22);
             this.StatusStrip.TabIndex = 1;
@@ -279,31 +279,31 @@
             this.OutputsGroupBox.Size = new System.Drawing.Size(707, 264);
             this.OutputsGroupBox.TabIndex = 10;
             this.OutputsGroupBox.TabStop = false;
-            this.OutputsGroupBox.Text = "Outputs";
+            this.OutputsGroupBox.Text = "Controller";
             // 
             // VoltageControlPositiveChart
             // 
             this.VoltageControlPositiveChart.BackColor = System.Drawing.SystemColors.Control;
             this.VoltageControlPositiveChart.BorderlineColor = System.Drawing.SystemColors.ControlText;
-            chartArea10.AxisX.Enabled = System.Windows.Forms.DataVisualization.Charting.AxisEnabled.False;
-            chartArea10.AxisX2.Enabled = System.Windows.Forms.DataVisualization.Charting.AxisEnabled.False;
-            chartArea10.AxisY.Enabled = System.Windows.Forms.DataVisualization.Charting.AxisEnabled.False;
-            chartArea10.AxisY.Maximum = 16D;
-            chartArea10.AxisY.Minimum = 0D;
-            chartArea10.AxisY2.Enabled = System.Windows.Forms.DataVisualization.Charting.AxisEnabled.False;
-            chartArea10.BackColor = System.Drawing.SystemColors.Control;
-            chartArea10.Name = "ChartArea1";
-            chartArea10.Position.Auto = false;
-            chartArea10.Position.Height = 100F;
-            chartArea10.Position.Width = 100F;
-            this.VoltageControlPositiveChart.ChartAreas.Add(chartArea10);
+            chartArea4.AxisX.Enabled = System.Windows.Forms.DataVisualization.Charting.AxisEnabled.False;
+            chartArea4.AxisX2.Enabled = System.Windows.Forms.DataVisualization.Charting.AxisEnabled.False;
+            chartArea4.AxisY.Enabled = System.Windows.Forms.DataVisualization.Charting.AxisEnabled.False;
+            chartArea4.AxisY.Maximum = 16D;
+            chartArea4.AxisY.Minimum = 0D;
+            chartArea4.AxisY2.Enabled = System.Windows.Forms.DataVisualization.Charting.AxisEnabled.False;
+            chartArea4.BackColor = System.Drawing.SystemColors.Control;
+            chartArea4.Name = "ChartArea1";
+            chartArea4.Position.Auto = false;
+            chartArea4.Position.Height = 100F;
+            chartArea4.Position.Width = 100F;
+            this.VoltageControlPositiveChart.ChartAreas.Add(chartArea4);
             this.VoltageControlPositiveChart.Location = new System.Drawing.Point(114, 137);
             this.VoltageControlPositiveChart.Name = "VoltageControlPositiveChart";
-            series10.ChartArea = "ChartArea1";
-            series10.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Bar;
-            series10.Name = "Series1";
-            series10.Points.Add(dataPoint10);
-            this.VoltageControlPositiveChart.Series.Add(series10);
+            series4.ChartArea = "ChartArea1";
+            series4.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Bar;
+            series4.Name = "Series1";
+            series4.Points.Add(dataPoint4);
+            this.VoltageControlPositiveChart.Series.Add(series4);
             this.VoltageControlPositiveChart.Size = new System.Drawing.Size(111, 20);
             this.VoltageControlPositiveChart.TabIndex = 25;
             this.VoltageControlPositiveChart.Text = "chart1";
@@ -312,27 +312,27 @@
             // 
             this.VoltageControlNegativeChart.BackColor = System.Drawing.SystemColors.Control;
             this.VoltageControlNegativeChart.BorderlineColor = System.Drawing.SystemColors.ControlText;
-            chartArea11.AxisX.Enabled = System.Windows.Forms.DataVisualization.Charting.AxisEnabled.False;
-            chartArea11.AxisX2.Enabled = System.Windows.Forms.DataVisualization.Charting.AxisEnabled.False;
-            chartArea11.AxisY.Enabled = System.Windows.Forms.DataVisualization.Charting.AxisEnabled.False;
-            chartArea11.AxisY.IsReversed = true;
-            chartArea11.AxisY.Maximum = 16D;
-            chartArea11.AxisY.Minimum = 0D;
-            chartArea11.AxisY2.Enabled = System.Windows.Forms.DataVisualization.Charting.AxisEnabled.False;
-            chartArea11.BackColor = System.Drawing.SystemColors.Control;
-            chartArea11.Name = "ChartArea1";
-            chartArea11.Position.Auto = false;
-            chartArea11.Position.Height = 100F;
-            chartArea11.Position.Width = 100F;
-            this.VoltageControlNegativeChart.ChartAreas.Add(chartArea11);
+            chartArea5.AxisX.Enabled = System.Windows.Forms.DataVisualization.Charting.AxisEnabled.False;
+            chartArea5.AxisX2.Enabled = System.Windows.Forms.DataVisualization.Charting.AxisEnabled.False;
+            chartArea5.AxisY.Enabled = System.Windows.Forms.DataVisualization.Charting.AxisEnabled.False;
+            chartArea5.AxisY.IsReversed = true;
+            chartArea5.AxisY.Maximum = 16D;
+            chartArea5.AxisY.Minimum = 0D;
+            chartArea5.AxisY2.Enabled = System.Windows.Forms.DataVisualization.Charting.AxisEnabled.False;
+            chartArea5.BackColor = System.Drawing.SystemColors.Control;
+            chartArea5.Name = "ChartArea1";
+            chartArea5.Position.Auto = false;
+            chartArea5.Position.Height = 100F;
+            chartArea5.Position.Width = 100F;
+            this.VoltageControlNegativeChart.ChartAreas.Add(chartArea5);
             this.VoltageControlNegativeChart.Location = new System.Drawing.Point(6, 137);
             this.VoltageControlNegativeChart.Name = "VoltageControlNegativeChart";
-            series11.ChartArea = "ChartArea1";
-            series11.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Bar;
-            series11.Name = "Series1";
-            dataPoint11.Color = System.Drawing.Color.Red;
-            series11.Points.Add(dataPoint11);
-            this.VoltageControlNegativeChart.Series.Add(series11);
+            series5.ChartArea = "ChartArea1";
+            series5.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Bar;
+            series5.Name = "Series1";
+            dataPoint5.Color = System.Drawing.Color.Red;
+            series5.Points.Add(dataPoint5);
+            this.VoltageControlNegativeChart.Series.Add(series5);
             this.VoltageControlNegativeChart.Size = new System.Drawing.Size(111, 20);
             this.VoltageControlNegativeChart.TabIndex = 27;
             this.VoltageControlNegativeChart.Text = "chart2";
@@ -378,9 +378,9 @@
             this.groupBox4.Controls.Add(this.comboBox3);
             this.groupBox4.Controls.Add(this.label1);
             this.groupBox4.Controls.Add(this.AllowableOffsetUpDown);
-            this.groupBox4.Location = new System.Drawing.Point(162, 102);
+            this.groupBox4.Location = new System.Drawing.Point(204, 102);
             this.groupBox4.Name = "groupBox4";
-            this.groupBox4.Size = new System.Drawing.Size(304, 128);
+            this.groupBox4.Size = new System.Drawing.Size(262, 128);
             this.groupBox4.TabIndex = 14;
             this.groupBox4.TabStop = false;
             // 
@@ -388,9 +388,9 @@
             // 
             this.comboBox4.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.comboBox4.FormattingEnabled = true;
-            this.comboBox4.Location = new System.Drawing.Point(201, 62);
+            this.comboBox4.Location = new System.Drawing.Point(179, 62);
             this.comboBox4.Name = "comboBox4";
-            this.comboBox4.Size = new System.Drawing.Size(96, 21);
+            this.comboBox4.Size = new System.Drawing.Size(73, 21);
             this.comboBox4.TabIndex = 15;
             // 
             // AccelerationControlUpDown
@@ -412,7 +412,7 @@
             0,
             -2147483648});
             this.AccelerationControlUpDown.Name = "AccelerationControlUpDown";
-            this.AccelerationControlUpDown.Size = new System.Drawing.Size(97, 20);
+            this.AccelerationControlUpDown.Size = new System.Drawing.Size(75, 20);
             this.AccelerationControlUpDown.TabIndex = 13;
             this.AccelerationControlUpDown.ValueChanged += new System.EventHandler(this.OnAccelerationSetPointChanged);
             // 
@@ -429,9 +429,9 @@
             // 
             this.comboBox3.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.comboBox3.FormattingEnabled = true;
-            this.comboBox3.Location = new System.Drawing.Point(201, 19);
+            this.comboBox3.Location = new System.Drawing.Point(179, 18);
             this.comboBox3.Name = "comboBox3";
-            this.comboBox3.Size = new System.Drawing.Size(96, 21);
+            this.comboBox3.Size = new System.Drawing.Size(73, 21);
             this.comboBox3.TabIndex = 13;
             // 
             // label1
@@ -452,19 +452,14 @@
             0,
             0});
             this.AllowableOffsetUpDown.Name = "AllowableOffsetUpDown";
-            this.AllowableOffsetUpDown.Size = new System.Drawing.Size(97, 20);
+            this.AllowableOffsetUpDown.Size = new System.Drawing.Size(75, 20);
             this.AllowableOffsetUpDown.TabIndex = 12;
-            this.AllowableOffsetUpDown.Value = new decimal(new int[] {
-            5,
-            0,
-            0,
-            0});
             // 
             // groupBox3
             // 
-            this.groupBox3.Controls.Add(this.label12);
-            this.groupBox3.Controls.Add(this.label11);
-            this.groupBox3.Controls.Add(this.label2);
+            this.groupBox3.Controls.Add(this.KdModifierTextBox);
+            this.groupBox3.Controls.Add(this.KiModifierTextBox);
+            this.groupBox3.Controls.Add(this.KpModifierTextBox);
             this.groupBox3.Controls.Add(this.PositionPUpDown);
             this.groupBox3.Controls.Add(this.PLabel);
             this.groupBox3.Controls.Add(this.ILabel);
@@ -473,37 +468,34 @@
             this.groupBox3.Controls.Add(this.DLabel);
             this.groupBox3.Location = new System.Drawing.Point(6, 102);
             this.groupBox3.Name = "groupBox3";
-            this.groupBox3.Size = new System.Drawing.Size(150, 128);
+            this.groupBox3.Size = new System.Drawing.Size(192, 128);
             this.groupBox3.TabIndex = 13;
             this.groupBox3.TabStop = false;
             this.groupBox3.Text = "PID Gains";
             // 
-            // label12
+            // KdModifierTextBox
             // 
-            this.label12.AutoSize = true;
-            this.label12.Location = new System.Drawing.Point(106, 103);
-            this.label12.Name = "label12";
-            this.label12.Size = new System.Drawing.Size(39, 13);
-            this.label12.TabIndex = 14;
-            this.label12.Text = "x10^-6";
+            this.KdModifierTextBox.Location = new System.Drawing.Point(95, 100);
+            this.KdModifierTextBox.Name = "KdModifierTextBox";
+            this.KdModifierTextBox.ReadOnly = true;
+            this.KdModifierTextBox.Size = new System.Drawing.Size(91, 20);
+            this.KdModifierTextBox.TabIndex = 17;
             // 
-            // label11
+            // KiModifierTextBox
             // 
-            this.label11.AutoSize = true;
-            this.label11.Location = new System.Drawing.Point(106, 62);
-            this.label11.Name = "label11";
-            this.label11.Size = new System.Drawing.Size(39, 13);
-            this.label11.TabIndex = 13;
-            this.label11.Text = "x10^-6";
+            this.KiModifierTextBox.Location = new System.Drawing.Point(95, 59);
+            this.KiModifierTextBox.Name = "KiModifierTextBox";
+            this.KiModifierTextBox.ReadOnly = true;
+            this.KiModifierTextBox.Size = new System.Drawing.Size(91, 20);
+            this.KiModifierTextBox.TabIndex = 16;
             // 
-            // label2
+            // KpModifierTextBox
             // 
-            this.label2.AutoSize = true;
-            this.label2.Location = new System.Drawing.Point(106, 21);
-            this.label2.Name = "label2";
-            this.label2.Size = new System.Drawing.Size(39, 13);
-            this.label2.TabIndex = 12;
-            this.label2.Text = "x10^-6";
+            this.KpModifierTextBox.Location = new System.Drawing.Point(95, 18);
+            this.KpModifierTextBox.Name = "KpModifierTextBox";
+            this.KpModifierTextBox.ReadOnly = true;
+            this.KpModifierTextBox.Size = new System.Drawing.Size(91, 20);
+            this.KpModifierTextBox.TabIndex = 15;
             // 
             // PositionPUpDown
             // 
@@ -514,7 +506,7 @@
             0,
             0});
             this.PositionPUpDown.Name = "PositionPUpDown";
-            this.PositionPUpDown.Size = new System.Drawing.Size(68, 20);
+            this.PositionPUpDown.Size = new System.Drawing.Size(57, 20);
             this.PositionPUpDown.TabIndex = 11;
             this.PositionPUpDown.Value = new decimal(new int[] {
             4500,
@@ -550,7 +542,7 @@
             0,
             0});
             this.PositionDUpDown.Name = "PositionDUpDown";
-            this.PositionDUpDown.Size = new System.Drawing.Size(68, 20);
+            this.PositionDUpDown.Size = new System.Drawing.Size(57, 20);
             this.PositionDUpDown.TabIndex = 11;
             this.PositionDUpDown.ValueChanged += new System.EventHandler(this.OnDerivativeChanged);
             // 
@@ -563,7 +555,7 @@
             0,
             0});
             this.PositionIUpDown.Name = "PositionIUpDown";
-            this.PositionIUpDown.Size = new System.Drawing.Size(68, 20);
+            this.PositionIUpDown.Size = new System.Drawing.Size(57, 20);
             this.PositionIUpDown.TabIndex = 11;
             this.PositionIUpDown.ValueChanged += new System.EventHandler(this.OnIntegralChanged);
             // 
@@ -632,40 +624,56 @@
             // 
             this.VelocityControlUpDown.Enabled = false;
             this.VelocityControlUpDown.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.VelocityControlUpDown.Increment = new decimal(new int[] {
+            250,
+            0,
+            0,
+            0});
             this.VelocityControlUpDown.Location = new System.Drawing.Point(6, 235);
+            this.VelocityControlUpDown.Maximum = new decimal(new int[] {
+            10000000,
+            0,
+            0,
+            0});
+            this.VelocityControlUpDown.Minimum = new decimal(new int[] {
+            10000000,
+            0,
+            0,
+            -2147483648});
             this.VelocityControlUpDown.Name = "VelocityControlUpDown";
             this.VelocityControlUpDown.Size = new System.Drawing.Size(120, 20);
             this.VelocityControlUpDown.TabIndex = 17;
+            this.VelocityControlUpDown.ValueChanged += new System.EventHandler(this.OnVelocitySetPointChanged);
             // 
             // RawBinaryChart
             // 
             this.RawBinaryChart.BackColor = System.Drawing.SystemColors.Control;
             this.RawBinaryChart.BorderlineColor = System.Drawing.SystemColors.ControlText;
-            chartArea12.AxisX.Enabled = System.Windows.Forms.DataVisualization.Charting.AxisEnabled.False;
-            chartArea12.AxisX.MajorGrid.Enabled = false;
-            chartArea12.AxisX2.Enabled = System.Windows.Forms.DataVisualization.Charting.AxisEnabled.False;
-            chartArea12.AxisX2.MajorGrid.Enabled = false;
-            chartArea12.AxisY.Enabled = System.Windows.Forms.DataVisualization.Charting.AxisEnabled.False;
-            chartArea12.AxisY.MajorGrid.Enabled = false;
-            chartArea12.AxisY.Maximum = 255D;
-            chartArea12.AxisY.Minimum = 5D;
-            chartArea12.AxisY2.Enabled = System.Windows.Forms.DataVisualization.Charting.AxisEnabled.False;
-            chartArea12.AxisY2.MajorGrid.Enabled = false;
-            chartArea12.BackColor = System.Drawing.SystemColors.Control;
-            chartArea12.Name = "ChartArea1";
-            chartArea12.Position.Auto = false;
-            chartArea12.Position.Height = 100F;
-            chartArea12.Position.Width = 100F;
-            this.RawBinaryChart.ChartAreas.Add(chartArea12);
+            chartArea6.AxisX.Enabled = System.Windows.Forms.DataVisualization.Charting.AxisEnabled.False;
+            chartArea6.AxisX.MajorGrid.Enabled = false;
+            chartArea6.AxisX2.Enabled = System.Windows.Forms.DataVisualization.Charting.AxisEnabled.False;
+            chartArea6.AxisX2.MajorGrid.Enabled = false;
+            chartArea6.AxisY.Enabled = System.Windows.Forms.DataVisualization.Charting.AxisEnabled.False;
+            chartArea6.AxisY.MajorGrid.Enabled = false;
+            chartArea6.AxisY.Maximum = 255D;
+            chartArea6.AxisY.Minimum = 5D;
+            chartArea6.AxisY2.Enabled = System.Windows.Forms.DataVisualization.Charting.AxisEnabled.False;
+            chartArea6.AxisY2.MajorGrid.Enabled = false;
+            chartArea6.BackColor = System.Drawing.SystemColors.Control;
+            chartArea6.Name = "ChartArea1";
+            chartArea6.Position.Auto = false;
+            chartArea6.Position.Height = 100F;
+            chartArea6.Position.Width = 100F;
+            this.RawBinaryChart.ChartAreas.Add(chartArea6);
             this.RawBinaryChart.Location = new System.Drawing.Point(3, 65);
             this.RawBinaryChart.Margin = new System.Windows.Forms.Padding(0);
             this.RawBinaryChart.Name = "RawBinaryChart";
-            series12.BorderDashStyle = System.Windows.Forms.DataVisualization.Charting.ChartDashStyle.NotSet;
-            series12.ChartArea = "ChartArea1";
-            series12.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Bar;
-            series12.Name = "Series1";
-            series12.Points.Add(dataPoint12);
-            this.RawBinaryChart.Series.Add(series12);
+            series6.BorderDashStyle = System.Windows.Forms.DataVisualization.Charting.ChartDashStyle.NotSet;
+            series6.ChartArea = "ChartArea1";
+            series6.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Bar;
+            series6.Name = "Series1";
+            series6.Points.Add(dataPoint6);
+            this.RawBinaryChart.Series.Add(series6);
             this.RawBinaryChart.Size = new System.Drawing.Size(222, 20);
             this.RawBinaryChart.TabIndex = 26;
             this.RawBinaryChart.Text = "chart1";
@@ -958,18 +966,10 @@
             // configurationToolStripMenuItem
             // 
             this.configurationToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.realtimeDataSettingsToolStripMenuItem,
             this.deadBandSettingsToolStripMenuItem});
             this.configurationToolStripMenuItem.Name = "configurationToolStripMenuItem";
             this.configurationToolStripMenuItem.Size = new System.Drawing.Size(61, 20);
             this.configurationToolStripMenuItem.Text = "Settings";
-            // 
-            // realtimeDataSettingsToolStripMenuItem
-            // 
-            this.realtimeDataSettingsToolStripMenuItem.Name = "realtimeDataSettingsToolStripMenuItem";
-            this.realtimeDataSettingsToolStripMenuItem.Size = new System.Drawing.Size(192, 22);
-            this.realtimeDataSettingsToolStripMenuItem.Text = "Realtime Data Settings";
-            this.realtimeDataSettingsToolStripMenuItem.Click += new System.EventHandler(this.OnRealtimeDataSettingsMenuClicked);
             // 
             // deadBandSettingsToolStripMenuItem
             // 
@@ -1169,7 +1169,7 @@
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.AutoValidate = System.Windows.Forms.AutoValidate.EnableAllowFocusChange;
-            this.ClientSize = new System.Drawing.Size(730, 514);
+            this.ClientSize = new System.Drawing.Size(730, 515);
             this.Controls.Add(this.MotorDataGroupBox);
             this.Controls.Add(this.IncomingDataGroupBox);
             this.Controls.Add(this.OutputsGroupBox);
@@ -1277,7 +1277,6 @@
         private System.Windows.Forms.Label label6;
         private System.Windows.Forms.Label label5;
         private System.Windows.Forms.Label label4;
-        private System.Windows.Forms.ToolStripMenuItem realtimeDataSettingsToolStripMenuItem;
         private System.Windows.Forms.NumericUpDown AllowableOffsetUpDown;
         private System.Windows.Forms.NumericUpDown AccelerationControlUpDown;
         private System.Windows.Forms.DataVisualization.Charting.Chart VoltageControlNegativeChart;
@@ -1300,14 +1299,14 @@
         private System.Windows.Forms.Button button2;
         private System.Windows.Forms.Button button1;
         private System.Windows.Forms.GroupBox groupBox3;
-        private System.Windows.Forms.Label label2;
         private System.Windows.Forms.Label label1;
         private System.Windows.Forms.GroupBox groupBox4;
         private System.Windows.Forms.ComboBox comboBox4;
         private System.Windows.Forms.Label label13;
         private System.Windows.Forms.ComboBox comboBox3;
-        private System.Windows.Forms.Label label12;
-        private System.Windows.Forms.Label label11;
+        private System.Windows.Forms.TextBox KdModifierTextBox;
+        private System.Windows.Forms.TextBox KiModifierTextBox;
+        private System.Windows.Forms.TextBox KpModifierTextBox;
     }
 }
 

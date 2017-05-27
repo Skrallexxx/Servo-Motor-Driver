@@ -21,16 +21,17 @@ namespace ServoMotorDriver {
 
         // Sub-Forms
         DeadBandSettingsForm deadbandSettings = null;
-        RealtimeDataSettingsForm realtimeDataSettings = null;
         GraphingForm graphs = null;
 
         #region Variables and Control/Communication Properties
-        // DAC variables
+        // DAC variables from Excel trendline
         private DAC dac1 = new DAC(0.1206m, -15.697m);
-        public decimal binaryMax = 255, binaryMin = 5;
+        public int binaryMax = 255, binaryMin = 5;
 
         /*==================================================== POSITION, VELOCITY AND ACCELERATION ====================================================*/
         // Decoder Position Variables
+        public int encoderResolution = 2000; // Counts per resolution
+        public int decoderResetMax = 20000, decoderResetMin = -20000;
         public KeyValuePair<Int32, Int16> decoderValue;
         public Int16 currentPos = 0;
         public Int16 lastPos = 0;
@@ -42,17 +43,20 @@ namespace ServoMotorDriver {
         public double velocity = 0;
         public Int64 lastPosition = 0;
         public int positionIndex = 0;
+        public int numPositionSamples = 500;
         List<KeyValuePair<Int64, Int32>> lastPositions = new List<KeyValuePair<Int64, Int32>>();
 
         // Acceleration variables
         public double acceleration = 0.0;
         public double lastVelocity = 0.0;
         public int velocityIndex = 0;
+        public int numVelocitySamples = 500;
         List<KeyValuePair<Double, Int32>> lastVelocities = new List<KeyValuePair<Double, Int32>>();
 
         /*==================================================== PID ====================================================*/
         Int64 error = 0, errorLast = 0;
         double errorIntegral = 0, errorDerivative;
+        int errorIntegralMax = 750, errorIntegralMin = -750;
 
         // Proportional, Integral and Derivative multipliers
         double kp = 0.0045;
@@ -151,12 +155,15 @@ namespace ServoMotorDriver {
 
         // Send-Recieve method, runs every 10 ticks
         private void ProgramLoop(object sender, EventArgs e) {
+            // Update variables each loop
             currentPos = decoderValue.Value;
-            currentRotationPos = (Int16)(currentPos % 2000);
+            currentRotationPos = (Int16)(currentPos % encoderResolution);
             totalPos += (currentPos - lastPos);
 
             lastPos = currentPos;
+            lastTotalPos = lastPos;
 
+            // Update interface
             CurrentBinaryTextBox.Text = Communications.dacCurrentValue.ToString();
             CurrentVoltageTextBox.Text = CalculateVoltageFromBinary(Communications.dacCurrentValue).ToString();
 
@@ -165,6 +172,7 @@ namespace ServoMotorDriver {
             LowByteTextBox.Text = ((byte)(decoderValue.Value)).ToString();
             PositionIntegerUpDown.Value = currentPos;
 
+            // Calculate the velocity and accelertion
             CalculateVelocity();
             CalculateAcceleration();
 
@@ -183,7 +191,13 @@ namespace ServoMotorDriver {
                                                                                        .setBinary(Communications.dacCurrentValue)
                                                                                        .setPosition(totalPos).setRotationPosition(currentRotationPos).setVelocity(velocity)
                                                                                        .setAcceleration(acceleration));
-
+            
+            // If there is a mismatch between desired binary value and the actual value on the arduino, resend the desired value.
+            if (Communications.dacCurrentValue != BinaryControlUpDown.Value) {
+                Communications.SendOutgoingData(Communications.cmdSetDAC, 1, new byte[] { (byte)BinaryControlUpDown.Value });
+            }
+            
+            // Perform the PID control if the Position Control is enabled.
             if (PositionControlRadioButton.Checked) 
                 PID();
 
@@ -195,7 +209,9 @@ namespace ServoMotorDriver {
         #endregion
 
         #region PID Control
+        // Performs the PID control.
         public void PID() {
+            // Variables
             int stopPoint = CalculateBinaryFromVoltage(0m);
             errorLast = error;
             error = desiredPos - totalPos;
@@ -204,32 +220,55 @@ namespace ServoMotorDriver {
             double dt = ProgramLoopTimer.Interval / 1000.0;
 
             if (Math.Abs(error) <= AllowableOffsetUpDown.Value) {
-                PID = 0.0;
-                error = 0;
-                errorLast = 0;
-                return;
+                PID = stopPoint;
+                errorIntegral = 0;
+                WriteMessage("Found 0 error");
             }
             else {
+                // Add the error integral to the running sum.
+                errorIntegral += (error * dt);
+
+                // Limit the error integral.
+                if (errorIntegral > errorIntegralMax)
+                    errorIntegral = errorIntegralMax;
+                if (errorIntegral < errorIntegralMin)
+                    errorIntegral = errorIntegralMin;
+
+                // Calculate the error derivative
+                errorDerivative = (error - errorLast) / dt;
+
+                // Calculate the PID value
                 PID = (kp * error) + (ki * errorIntegral) + (kd * errorDerivative);
-            }
 
-            if (PID > (255 - stopPoint))
-                PID = 255 - stopPoint;
-            else if (PID < (0 - stopPoint))
-                PID = 0 - stopPoint;
-            else errorIntegral += (error * dt);
+                // Publish PID term effects to interface.
+                KpModifierTextBox.Text = (kp * error).ToString();
+                KiModifierTextBox.Text = (ki * errorIntegral).ToString();
+                KdModifierTextBox.Text = (kd * errorDerivative).ToString();
 
-            errorDerivative = (error - errorLast) / dt;
+                // Convert PID from -Infinity -> +Infinity to -127 -> 127 (ish)
+                if (PID > (binaryMax - stopPoint))
+                    PID = binaryMax - stopPoint;
+                else if (PID < (0 - stopPoint))
+                    PID = 0 - stopPoint;
 
-            PID += stopPoint;
-            if (PID > stopPoint && PID < stopPoint + 1)
-                PID = Math.Round(PID + 1);
-            else if (PID < stopPoint && PID < stopPoint - 1)
-                PID = Math.Round(PID - 1);
+                // Convert PID from -127 -> 127 to 0 -> 255
+                PID += stopPoint;
 
-            Communications.SendOutgoingData(Communications.cmdSetDAC, 1, new byte[] { BoundBinary((int)(PID)) });
-            //RawControlUpDown.Value = BoundBinary((int)(PID));
-            //OnRawControlValueChanged(this, new EventArgs());
+                // Compensate PID for deadband, so that the motor still moves when the PID value says it should.
+                if (PID > DeadBandSettingsForm.min && PID < DeadBandSettingsForm.max)
+                {
+                    if (PID < stopPoint - 0.5)
+                        PID = DeadBandSettingsForm.min;
+                    if (PID > stopPoint + 0.5)
+                        PID = DeadBandSettingsForm.max;
+                }
+            }  
+
+            // Send the PID value to the interface and the arduino.
+            if (BinaryControlUpDown.Value != BoundBinary((int)(PID)))
+                BinaryControlUpDown.Value = BoundBinary((int)(PID));
+            else
+                Communications.SendOutgoingData(Communications.cmdSetDAC, 1, new byte[] { BoundBinary((int)(PID)) });
         }
         #endregion
 
@@ -238,6 +277,7 @@ namespace ServoMotorDriver {
         public void Communicate() {
             while (true) {
                 if(SerialComPort.IsOpen) {
+                    // If the data mode is DECODER, read the decoder value.
                     if (currentDataMode == ControlEnums.DATAMODE.DECODER) {
                         decoderValue = Communications.ReadDecoder();
                     }
@@ -246,84 +286,20 @@ namespace ServoMotorDriver {
                     }
 
                     // Send the reset command if position is not between -20000 and +20000
-                    if (currentPos >= 20000) {
+                    if (currentPos >= decoderResetMax) {
                         Communications.SendResetCommand();
                         lastPos = 0;
                         decoderValue = new KeyValuePair<int, short>(0, 0);
                     }
-                    else if (currentPos <= -20000) {
+                    else if (currentPos <= decoderResetMin) {
                         Communications.SendResetCommand();
                         lastPos = 0;
                         decoderValue = new KeyValuePair<int, short>(0, 0);
                     }
                     Communications.ReadDAC();
                 }
+                // Run communication thread at 100Hz independent of the main interface
                 Thread.Sleep(10);
-            }
-        }
-
-        // Calculates the velocity over a certain number of samples (and sample-period). Runs in a separate thread to more easily configure sample period
-        public void CalculateVelocity() {
-
-            if (totalPos != lastTotalPos) {
-                lastPositions.Add(new KeyValuePair<long, int>(totalPos, decoderValue.Key));
-
-                if(lastPositions.Count >=(500 / ProgramLoopTimer.Interval)) {
-                    lastPositions.RemoveAt(0);
-                    positionIndex++;
-                }
-
-                // Calculate moving average every 10 additions
-                if (positionIndex >= 5) {
-                    positionIndex = 0;
-
-                    List<double> velocities = new List<double>();
-                    foreach(KeyValuePair<long, int> posPair in lastPositions) {
-                        if(posPair.Value != 0) {
-                            double velocity = (posPair.Key - lastPosition) / (posPair.Value / 1000.0);
-                            velocities.Add(velocity);
-                            lastPosition = posPair.Key;
-                        }
-                    }
-
-                    double avgVelocity = 0.0;
-                    foreach(double vel in velocities) {
-                        avgVelocity += vel;
-                    }
-
-                    avgVelocity /= velocities.Count;
-                    velocity = avgVelocity;
-                }
-            }
-        }
-
-        public void CalculateAcceleration() {
-            lastVelocities.Add(new KeyValuePair<double, int>(velocity, decoderValue.Key));
-
-            if(lastVelocities.Count > (500 / ProgramLoopTimer.Interval)) {
-                lastVelocities.RemoveAt(0);
-                velocityIndex++;
-            }
-
-            if(velocityIndex >= 5) {
-                velocityIndex = 0;
-
-                List<double> accelerations = new List<double>();
-                foreach(KeyValuePair<double, int> velPair in lastVelocities) {
-                    if(velPair.Value != 0) {
-                        double acceleration = (velPair.Key - lastVelocity) / (velPair.Value / 1000.0);
-                        accelerations.Add(acceleration);
-                        lastVelocity = velPair.Key;
-                    }
-
-                }
-
-                double avgAcceleration = 0.0;
-                foreach (double accel in accelerations)
-                    avgAcceleration += accel;
-
-                avgAcceleration /= accelerations.Count;
-                acceleration = avgAcceleration;
             }
         }
 
@@ -340,7 +316,9 @@ namespace ServoMotorDriver {
             }
         }
 
+        // Called when the Connect button is clicked. Connects the serial connection with the desired COM port.
         private void OnConnectButtonClick(object sender, EventArgs e) {
+            // Ensure the selected port name is actually a COM port.
             if(SerialComPort.PortName.Length > 3) {
                 Communications.TryOpenSerialCommunication(SerialComPort.PortName);
             }
@@ -355,6 +333,7 @@ namespace ServoMotorDriver {
                 COMPortStatusTextBox.Text = "Failed";
         }
 
+        // Called when the Disconnect button is clicked. Disconnects the serial connection with the desired COM port.
         private void OnDisconnectButtonClick(object sender, EventArgs e) {
             if(SerialComPort.IsOpen) {
                 SerialComPort.Close();
@@ -366,6 +345,7 @@ namespace ServoMotorDriver {
             }
         }
 
+        // Called when the Refresh button is clicked. Reacquires the available COM ports.
         private void OnComPortRefreshButtonClick(object sender, EventArgs e) {
             COMPortSelectionBox.DataSource = SerialPort.GetPortNames();
         }
@@ -419,6 +399,7 @@ namespace ServoMotorDriver {
             WriteMessage("Selected Acceleration Unit updated to " + ControlEnums.GetAttribute(currentAccelerationUnit).disp);
         }
 
+        // Called when the mode radio buttons are clicked, enables/disables the different control modes.
         private void OnModeCheckChanged(object sender, EventArgs e) {
             BinaryControlUpDown.Enabled = false;
             VoltageControlUpDown.Enabled = false;
@@ -443,13 +424,7 @@ namespace ServoMotorDriver {
             deadbandSettings.BringToFront();
         }
 
-        private void OnRealtimeDataSettingsMenuClicked(object sender, EventArgs e) {
-            if (realtimeDataSettings == null || !realtimeDataSettingsOpen)
-                realtimeDataSettings = new RealtimeDataSettingsForm();
-            realtimeDataSettings.Show();
-            realtimeDataSettings.BringToFront();
-        }
-
+        // Called when the View->Graphs menu item is clicked. Opens the Graphing form.
         private void OnGraphsMenuClicked(object sender, EventArgs e) {
             if (graphs == null || !graphingOpen)
                 graphs = new GraphingForm();
@@ -484,25 +459,32 @@ namespace ServoMotorDriver {
             BinaryControlUpDown.Value = CalculateBinaryFromVoltage(VoltageControlUpDown.Value);
         }
 
+        // Called when the velocity set point is changed. Updates the desired velocity.
         private void OnVelocitySetPointChanged(object sender, EventArgs e) {
             GraphingForm.velocityLineY = (double)VelocityControlUpDown.Value;
         }
 
+        // Called when the acceleration set point is changed. Updates the max/min acceleration.
         private void OnAccelerationSetPointChanged(object sender, EventArgs e) {
             GraphingForm.accelerationLineY = (double)AccelerationControlUpDown.Value;
         }
 
         /*==================================================== MOTOR DATA AND CONTROL ====================================================*/
 
+        // Called when the Stop Motor button is clicked. Stop the motor and return to binary control.
         private void OnStopButtonClick(object sender, EventArgs e) {
             BinaryControlRadioButton.Checked = true;
-            BinaryControlUpDown.Value = CalculateBinaryFromVoltage(0m);
+            if (BinaryControlUpDown.Value != CalculateBinaryFromVoltage(0m))
+                BinaryControlUpDown.Value = CalculateBinaryFromVoltage(0m);
+            else Communications.SendOutgoingData(Communications.cmdSetDAC, 1, new byte[] { CalculateBinaryFromVoltage(0m) });
         }
 
+        // Called when the Full Forward button is clicked. Sends the max binary value to the motor.
         private void OnFullForwardButtonClick(object sender, EventArgs e) {
             BinaryControlUpDown.Value = binaryMax;
         }
 
+        // Called when the Full Reverse button is clicked. Sends the minimum binary value to the motor.
         private void OnFullReverseButtonClick(object sender, EventArgs e) {
             BinaryControlUpDown.Value = binaryMin;
         }
@@ -531,19 +513,23 @@ namespace ServoMotorDriver {
 
         /*==================================================== PID CONTROL ====================================================*/
 
+        // Called when the desired position numeric up-down is changed
         private void OnDesiredPositionChanged(object sender, EventArgs e) {
             desiredPos = (int)(PositionControlUpDown.Value);
             GraphingForm.positionLineY = (int)(PositionControlUpDown.Value);
         }
 
+        // Called when the proportional gain value is changed. Gain is Value x10^-6
         private void OnProportionalChanged(object sender, EventArgs e) {
             kp = (double)PositionPUpDown.Value / 1000000.0;
         }
 
+        // Called when the derivative gain value is changed. Gain is value x10^-6
         private void OnDerivativeChanged(object sender, EventArgs e) {
             kd = (double)PositionDUpDown.Value / 1000000.0;
         }
 
+        // Called when the integral gain value is changed. Gain is value x10^-6
         private void OnIntegralChanged(object sender, EventArgs e) {
             ki = (double)PositionIUpDown.Value / 10000.0;
         }
@@ -557,8 +543,6 @@ namespace ServoMotorDriver {
             // Close any still-open subforms
             if (deadbandSettings != null || deadbandSettingsOpen)
                 deadbandSettings.Close();
-            if (realtimeDataSettings != null || realtimeDataSettingsOpen)
-                realtimeDataSettings.Close();
             if (graphs != null || graphingOpen)
                 graphs.Close();
 
@@ -584,11 +568,100 @@ namespace ServoMotorDriver {
             return BoundBinary((int)Math.Round(binary));
         }
 
+        // Ensure an integer does not exceeds the limits of a byte (0 to 255)
         public byte BoundBinary(int binary) {
             int b = binary;
             if (b > 255) b = 255;
             if (b < 5) b = 5;
             return (byte)b;
+        }
+
+        // Calculates the velocity as a moving average with a certain number of samples.
+        public void CalculateVelocity()
+        {
+
+            // Ensure a position isn't being added if it hasn't changed.
+            if (totalPos != lastTotalPos)
+            {
+                lastPositions.Add(new KeyValuePair<long, int>(totalPos, decoderValue.Key));
+
+                // Remove the first position if the count exceeds the desired number.
+                if (lastPositions.Count >= (numPositionSamples / ProgramLoopTimer.Interval))
+                {
+                    lastPositions.RemoveAt(0);
+                    positionIndex++;
+                }
+
+                // Calculate moving average every 10 additions
+                if (positionIndex >= 10)
+                {
+                    positionIndex = 0;
+
+                    List<double> velocities = new List<double>();
+                    // Calculate each velocity point and add to list.
+                    foreach (KeyValuePair<long, int> posPair in lastPositions)
+                    {
+                        if (posPair.Value != 0)
+                        {
+                            double velocity1 = (posPair.Key - lastPosition) / (posPair.Value / 1000.0);
+                            velocities.Add(velocity1);
+                            lastPosition = posPair.Key;
+                        }
+                    }
+
+                    double avgVelocity = 0.0;
+                    // Calculate average velocity.
+                    foreach (double vel in velocities)
+                    {
+                        avgVelocity += vel;
+                    }
+
+                    avgVelocity /= velocities.Count;
+                    // Publish average velocity to global variable.
+                    velocity = avgVelocity;
+                }
+            }
+        }
+
+        // Calculates the acceleration as a moving average with a certain number of samples.
+        public void CalculateAcceleration()
+        {
+            lastVelocities.Add(new KeyValuePair<double, int>(velocity, decoderValue.Key));
+
+            // Remove the first velocity if the count exceeds the desired number.
+            if (lastVelocities.Count > (numVelocitySamples / ProgramLoopTimer.Interval))
+            {
+                lastVelocities.RemoveAt(0);
+                velocityIndex++;
+            }
+
+            // Calculate moving average every 10 additions
+            if (velocityIndex >= 10)
+            {
+                velocityIndex = 0;
+
+                List<double> accelerations = new List<double>();
+                // Calculate each acceleration point and add to list.
+                foreach (KeyValuePair<double, int> velPair in lastVelocities)
+                {
+                    if (velPair.Value != 0)
+                    {
+                        double acceleration1 = (velPair.Key - lastVelocity) / (velPair.Value / 1000.0);
+                        accelerations.Add(acceleration1);
+                        lastVelocity = velPair.Key;
+                    }
+
+                }
+
+                double avgAcceleration = 0.0;
+                // Calculate average acceleration.
+                foreach (double accel in accelerations)
+                    avgAcceleration += accel;
+
+                avgAcceleration /= accelerations.Count;
+                // Publish average acceleration to global variable.
+                acceleration = avgAcceleration;
+            }
         }
 
         /*==================================================== UNIT CONVERSION ====================================================*/
@@ -697,5 +770,6 @@ namespace ServoMotorDriver {
             MessageLogStatusStrip.Text = message;
         }
         #endregion
+
     }
 }

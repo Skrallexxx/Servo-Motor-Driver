@@ -217,7 +217,7 @@
             this.DataPointsUpDown.Size = new System.Drawing.Size(123, 20);
             this.DataPointsUpDown.TabIndex = 21;
             this.DataPointsUpDown.Value = new decimal(new int[] {
-            600,
+            300,
             0,
             0,
             0});

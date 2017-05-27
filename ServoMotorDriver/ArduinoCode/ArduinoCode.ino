@@ -4,7 +4,7 @@ Created:  3/7/2017 11:31:51 AM
 Author: Alex
 */
 
-const bool TESTING = true;
+const bool TESTING = false;
 
 // Decoder Pin Mappings
 const int SEL = 37, OE = 36, RST = 35;
@@ -27,12 +27,12 @@ byte checkByte1 = 0, checkByte2 = 0; // The received check bytes
 // Decoder Polling Variables
 int deltaT = 1000; // Time period to read in microseconds
 int64_t oldMicros = 0;
-int64_t oldMillis = 0;
+int64_t oldTime = 0;
 int32_t dataValue = 0;
 
 // the setup function runs once when you press reset or power the board
 void setup() {
-  Serial.begin(115200);
+  Serial.begin(57600);
   DDRA = 0xFF;
   DDRC = 0xFF;
   DDRK = 0x00;
@@ -41,17 +41,18 @@ void setup() {
   while(!Serial) {
     delay(20);
   }
+  PORTA = dacValue;
 }
 
 // the loop function runs over and over again until power down or reset
 void loop() {
   if (!Serial)
-    Serial.begin(115200);
+    Serial.begin(57600);
 
   if(!TESTING) {
     if (checkTime(deltaT)) {
-      ReadDecoderBytes();
-      dataValue = (int16_t)((bitFlip(decoderHigh) << 8) | bitFlip(decoderLow));
+      //ReadDecoderBytes();
+      //dataValue = (int16_t)((bitFlip(decoderHigh) << 8) | bitFlip(decoderLow));
     }
   }
   
@@ -78,18 +79,17 @@ void loop() {
     int16_t receivedCheckSum = (int16_t)((checkByte1 << 8) | checkByte2);
     if (checkSum != receivedCheckSum) return;
 
-    if(cmdByte == cmdReadDecoder) {
+    if(cmdByte == cmdReadDecoder) {    
         unsigned long timeStamp = 0;
         timeStamp = ReadDecoderBytes();
+        dataValue = (int16_t)((bitFlip(decoderHigh) << 8) | bitFlip(decoderLow));
         byte bytes[] = { (byte)(timeStamp >> 24), (byte)(timeStamp >> 16), (byte)(timeStamp >> 8), (byte)(timeStamp), (byte)(dataValue >> 8), (byte)(dataValue) };
         SendOutgoingData(cmdReadDecoder, 6, bytes);
     }
     else if(cmdByte == cmdRstDecoder) {
         dataValue = 0;
         digitalWrite(RST, LOW);
-        delay(2);
         digitalWrite(RST, HIGH);
-        byte bytes[] = {100};
     }
     else if (cmdByte == cmdSetDAC) {
         dacValue = dataBytes[0];
@@ -135,21 +135,17 @@ bool checkTime(int32_t timeChange) {
 }
 
 unsigned long ReadDecoderBytes() {
-  int64_t timeDiff = millis() - oldMillis;
-  oldMillis = millis();
+  int64_t timeDiff = millis() - oldTime;
+  oldTime = millis();
   digitalWrite(SEL, LOW);
   digitalWrite(OE, LOW);
 
-  delay(2);
   decoderHigh = PINF;
 
-  delay(2);
   digitalWrite(SEL, HIGH);
 
-  delay(2);
   decoderLow = PINF;
 
-  delay(2);
   digitalWrite(OE, HIGH);
   return (int32_t)timeDiff;
 }

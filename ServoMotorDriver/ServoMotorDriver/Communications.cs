@@ -113,7 +113,7 @@ namespace ServoMotorDriver {
                 if (!serial.IsOpen) return;
 
                 if (serial.BytesToWrite > 0)
-                    Thread.Sleep(1);
+                    serial.DiscardOutBuffer();
 
                 byte[] bytesToWrite = new byte[7 + LEN];
                 bytesToWrite[0] = START; bytesToWrite[1] = CMD; bytesToWrite[2] = LEN;
@@ -133,6 +133,7 @@ namespace ServoMotorDriver {
             public static void SendResetCommand() {
                 if (serial.BytesToWrite > 0)
                     serial.DiscardOutBuffer();
+                decoderValue = new KeyValuePair<int, short>(0, 0);
                 SendOutgoingData(cmdRstDecoder, 1, new byte[] { 0 });
             }
         }

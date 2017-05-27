@@ -18,8 +18,8 @@ namespace ServoMotorDriver {
     public partial class DeadBandSettingsForm : Form {
         MainInterface instance = MainInterface.instance;
 
-        public static int min = 113, defaultMin = 113;
-        public static int max = 146, defaultMax = 146;
+        public static int min = 109, defaultMin = 109;
+        public static int max = 148, defaultMax = 148;
         public static int mass = 0, defaultMass = 0;
 
         public static bool deadbandTestRunning = false;
@@ -207,12 +207,13 @@ namespace ServoMotorDriver {
 
             // Testing configuration variables. Potentially move to interface if necessary
             int interval = 1;
-            int sleepTime = 500;
+            int sleepTime = 1000;
+            int offsetMin = 200;
 
             Console.Write("deadband test thread started");
 
             // Determine maximum deadband binary value
-            while (binaryVal < 255 && instance.totalPos <= (startPos + 1000)) {
+            while (binaryVal < 255 && instance.totalPos <= (startPos + offsetMin)) {
                 toolStripStatusLabel1.Text = "Stage 1/2";
                 binaryVal += interval;
                 startPos = instance.totalPos;
@@ -227,7 +228,7 @@ namespace ServoMotorDriver {
             comms.SendOutgoingData(comms.cmdSetDAC, 1, new byte[] { (byte)binaryVal});
 
             // Determine minimum deadband binary value
-            while(binaryVal > 0 && instance.totalPos >= (startPos - 1000)) {
+            while(binaryVal > 0 && instance.totalPos >= (startPos - offsetMin)) {
                 toolStripStatusLabel1.Text = "Stage 2/2";
                 binaryVal -= interval;
                 startPos = instance.totalPos;
