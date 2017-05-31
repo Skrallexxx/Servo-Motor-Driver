@@ -22,6 +22,11 @@ namespace ServoMotorDriver {
         public static int max = 148, defaultMax = 148;
         public static int mass = 0, defaultMass = 0;
 
+        // Automatic deadband testing variables
+        public const int testingIncrement = 1; // Binary increment amount
+        public const int testingInterval = 1000; // Time between tests (ms)
+        public const int testingMinChange = 200; // Minimum decoder count change
+
         public static bool deadbandTestRunning = false;
 
         private static Dictionary<int, DeadbandEntry> deadbandEntries = new Dictionary<int, DeadbandEntry>();
@@ -154,6 +159,7 @@ namespace ServoMotorDriver {
             max = (int)MaxUpDown.Value;
         }
 
+        // Called when the mass value is changed
         private void OnMassValueChanged(object sender, EventArgs e) {
             mass = (int)MassUpDown.Value;
         }
@@ -206,9 +212,9 @@ namespace ServoMotorDriver {
             int binaryVal = instance.CalculateBinaryFromVoltage(0m);
 
             // Testing configuration variables. Potentially move to interface if necessary
-            int interval = 1;
-            int sleepTime = 1000;
-            int offsetMin = 200;
+            int interval = testingIncrement;
+            int sleepTime = testingInterval;
+            int offsetMin = testingMinChange;
 
             Console.Write("deadband test thread started");
 
@@ -252,7 +258,7 @@ namespace ServoMotorDriver {
             // Deadband test is running and testing the max value
             if (deadbandTestRunning && binaryValue >= instance.CalculateBinaryFromVoltage(0m)) {
                 MaxUpDown.Value = binaryValue;
-                TestingProgressBar.Maximum = 255;
+                TestingProgressBar.Maximum = instance.binaryMax;
                 TestingProgressBar.Minimum = instance.CalculateBinaryFromVoltage(0m);
                 TestingProgressBar.Value = binaryValue;
             }
@@ -261,7 +267,7 @@ namespace ServoMotorDriver {
             if (deadbandTestRunning && binaryValue <= instance.CalculateBinaryFromVoltage(0m)) {
                 MinUpDown.Value = binaryValue;
                 TestingProgressBar.Maximum = instance.CalculateBinaryFromVoltage(0m);
-                TestingProgressBar.Minimum = 0;
+                TestingProgressBar.Minimum = instance.binaryMin;
                 TestingProgressBar.Value = (int)(instance.CalculateBinaryFromVoltage(0m) - binaryValue);
             }
 
@@ -276,6 +282,7 @@ namespace ServoMotorDriver {
         #endregion
 
         [Serializable]
+        // DeadbandEntry object class for storing details of each deadband entry
         public class DeadbandEntry {
             public int mass;
             public int min;

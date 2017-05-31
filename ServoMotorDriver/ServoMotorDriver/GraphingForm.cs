@@ -84,10 +84,12 @@ namespace ServoMotorDriver {
             GraphPeriodTextBox.Text = (double)(DataPointsUpDown.Value * (MainInterface.instance.ProgramLoopTimer.Interval / 1000.0m)) + " s";
         }
 
+        // Adds a entry to the graphing form. If data transformation is required, its handled here.
         public void AddGraphingEntry(GraphingEntry entry) {
             if (Series1EnabledCheckbox.Checked) {
                 series1Values.Add(entry);
 
+                // Add series 1 set-point values if they are enabled
                 if (currentYAxis1 == ControlEnums.AXISOPTIONS.POSITION)
                     setLine1Values.Add(new GraphingLine(entry.uptime, positionLineY));
                 if (currentYAxis1 == ControlEnums.AXISOPTIONS.VELOCITY)
@@ -101,6 +103,7 @@ namespace ServoMotorDriver {
             if (Series2EnabledCheckbox.Checked) {
                 series2Values.Add(entry);
 
+                // Add series 2 set-point values if they are enabled
                 if (currentYAxis2 == ControlEnums.AXISOPTIONS.POSITION)
                     setLine2Values.Add(new GraphingLine(entry.uptime, positionLineY));
                 if (currentYAxis2 == ControlEnums.AXISOPTIONS.VELOCITY)
@@ -112,6 +115,7 @@ namespace ServoMotorDriver {
                 }
             }
 
+            // If the number of points in any series exceeds the maximum, remove the first point.
             if (series1Values.Count > numDataPoints) series1Values.RemoveAt(0);
             if (setLine1Values.Count > numDataPoints) setLine1Values.RemoveAt(0);
             if (series2Values.Count > numDataPoints) series2Values.RemoveAt(0);
@@ -164,6 +168,7 @@ namespace ServoMotorDriver {
             WipeGraph();
         }
 
+        // Called when the y-axis 2 selection changes. Updates the plotting mapper also
         private void OnYAxis2SelectionChanged(object sender, EventArgs e) {
             currentYAxis2 = (ControlEnums.AXISOPTIONS)FindSelectedTextInEnum(YAxis2SelectionBox.Text, typeof(ControlEnums.AXISOPTIONS));
 
@@ -227,12 +232,14 @@ namespace ServoMotorDriver {
             WipeGraph();
         }
 
+        // Called when the number of data points changes.
         private void OnDataPointsUpDownChanged(object sender, EventArgs e) {
             GraphPeriodTextBox.Text = (double)(DataPointsUpDown.Value * (MainInterface.instance.ProgramLoopTimer.Interval / 1000.0m)) + " s";
             numDataPoints = (int)DataPointsUpDown.Value;
             WipeGraph();
         }
 
+        // Called when the series 1 checkbox changes. Disables or enables series 1.
         private void OnSeries1CheckedChanged(object sender, EventArgs e) {
             if(!Series1EnabledCheckbox.Checked) {
                 Chart.Series.Remove(series1);
@@ -249,6 +256,7 @@ namespace ServoMotorDriver {
             WipeGraph();
         }
 
+        // Called when the series 2 checkbox changes. Disables or enables series 2
         private void OnSeries2CheckedChanged(object sender, EventArgs e) {
             if (!Series2EnabledCheckbox.Checked) {
                 Chart.Series.Remove(series2);
@@ -265,24 +273,28 @@ namespace ServoMotorDriver {
             WipeGraph();
         }
 
+        // Called when the form closes
         private void OnFormClosed(object sender, FormClosedEventArgs e) {
             MainInterface.graphingOpen = false;
         }
         #endregion
 
         #region Unit Conversion Methods
+        // Sets the unit conversion factor for time (milliseconds <-> seconds), for either axis mapper
         public void CalculateTimeUnitConversion(CartesianMapper<GraphingEntry> mapper, ControlEnums.TIMEUNITS unit, bool xAxis) {
             if (xAxis)
                 mapper.X(entry => entry.uptime * GetTimeUnitConversionFactor(unit));
             else mapper.Y(entry => entry.uptime * GetTimeUnitConversionFactor(unit));
         }
 
+        // Sets the unit conversion factors for voltage (millivolts <-> volts), for either axis mapper
         public void CalculateVoltageUnitConversion(CartesianMapper<GraphingEntry> mapper, ControlEnums.VOLTAGEUNITS unit, bool xAxis) {
             if (xAxis)
                 mapper.X(entry => entry.voltage * GetVoltageUnitConversionFactor(unit));
             else mapper.Y(entry => entry.voltage * GetVoltageUnitConversionFactor(unit));
         }
 
+        // Sets the unit conversion factors for position, velocity and acceleration, for either axis mapper
         public void CalculateBaseUnitConversion(CartesianMapper<GraphingEntry> mapper, ControlEnums.AXISOPTIONS axis, ControlEnums.BASEUNITS unit, bool xAxis) {
             if (axis == ControlEnums.AXISOPTIONS.POSITION) {
                 if (xAxis)
@@ -301,6 +313,7 @@ namespace ServoMotorDriver {
             }
         }
 
+        // Calculates the unit conversion factors for position, velocity and acceleration, in deg, rad and revs
         public double GetBaseUnitConversionFactor(ControlEnums.AXISOPTIONS axis, ControlEnums.BASEUNITS unit) {
             if (unit == ControlEnums.BASEUNITS.DEG)
                 return 360.0 / 2000.0;
@@ -314,18 +327,21 @@ namespace ServoMotorDriver {
             return 1.0;
         }
 
+        // Calculates the unit conversion factors for time (seconds <-> milliseconds)
         public double GetTimeUnitConversionFactor(ControlEnums.TIMEUNITS unit) {
             if (unit == ControlEnums.TIMEUNITS.SECONDS)
                 return 1.0 / 1000.0;
             return 1.0;
         }
 
+        // Calculates the unit conversion factors for voltage (volts <-> millivolts)
         public double GetVoltageUnitConversionFactor(ControlEnums.VOLTAGEUNITS unit) {
             if (unit == ControlEnums.VOLTAGEUNITS.MILLIS)
                 return 1000.0;
             return 1.0;
         }
 
+        // Clears the graph
         public void WipeGraph() {
             series1Values.Clear();
             series2Values.Clear();
@@ -334,6 +350,7 @@ namespace ServoMotorDriver {
             setLine3Values.Clear();
         }
 
+        // Searches an enum for a specific display attribute
         private Enum FindSelectedTextInEnum(string text, Type enumType) {
             foreach (Enum e in Enum.GetValues(enumType)) {
                 if (text == ControlEnums.GetAttribute(e).disp) {
